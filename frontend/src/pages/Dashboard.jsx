@@ -33,7 +33,7 @@ const ProgressBar = ({ label, current, target, unit, unitOnlyAtEnd }) => {
   const safeTarget = target || 1;
   const rawPercent = (current / safeTarget) * 100;
   const visualPercent = Math.min(rawPercent, 100);
-  
+
   let color = '#22c55e';
   if (rawPercent > 80) color = '#f59e0b';
   if (rawPercent >= 100) color = '#ef4444';
@@ -58,15 +58,16 @@ const ProgressBar = ({ label, current, target, unit, unitOnlyAtEnd }) => {
 const Dashboard = () => {
   const { user: authUser } = useContext(AuthContext);
   const navigate = useNavigate();
-  
+
   const [intakes, setIntakes] = useState([]);
   const [showScanner, setShowScanner] = useState(false);
   const [scannedProduct, setScannedProduct] = useState(null);
   const [loadingMsg, setLoadingMsg] = useState('');
+  const [range, setRange] = useState(15); // default 15 days
 
   const [userProfile, setUserProfile] = useState(null);
   const [profileError, setProfileError] = useState('');
-  
+
   const [nutrition, setNutrition] = useState(null);
   const [nutritionError, setNutritionError] = useState('');
 
@@ -138,16 +139,16 @@ const Dashboard = () => {
         'Moderately Active': 1.55,
         'Very Active': 1.725
       };
-      
+
       let tdee = bmr * (activityFactors[userProfile.activityLevel] || 1.2);
 
       if (userProfile.goal === 'Weight Loss') tdee -= 300;
       if (userProfile.goal === 'Muscle Gain') tdee += 300;
 
-      const calories = Math.max(Math.round(tdee), 1200); 
+      const calories = Math.max(Math.round(tdee), 1200);
       const protein = Math.round(weight * 1.8);
       const fat = Math.round((calories * 0.25) / 9);
-      const sugar = 30; 
+      const sugar = 30;
 
       setNutrition({
         calories,
@@ -209,7 +210,7 @@ const Dashboard = () => {
     setWeightLoading(true);
     try {
       await api.post('/weight', { weight: Number(currentWeight) });
-      fetchWeightLogs(); 
+      fetchWeightLogs();
       setCurrentWeight('');
       setUserProfile(prev => ({ ...prev, weight: Number(currentWeight) }));
     } catch (err) {
@@ -232,14 +233,20 @@ const Dashboard = () => {
     return <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading...</div>;
   }
 
-  // Chart Logic
-  const last7DaysLogs = weightLogs.slice(-7);
+  // Chart Logic (UPDATED WITH TOGGLE)
+  const filteredLogs = weightLogs.slice(-range);
+
   const chartData = {
-    labels: last7DaysLogs.map(log => new Date(log.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })),
+    labels: filteredLogs.map(log =>
+      new Date(log.date).toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric'
+      })
+    ),
     datasets: [
       {
         label: 'Weight (kg)',
-        data: last7DaysLogs.map(log => log.weight),
+        data: filteredLogs.map(log => log.weight),
         borderColor: 'rgba(34, 197, 94, 1)',
         backgroundColor: 'rgba(34, 197, 94, 0.2)',
         pointBackgroundColor: '#fff',
@@ -250,7 +257,11 @@ const Dashboard = () => {
     ]
   };
 
-  const yMin = weightLogs.length > 0 ? Math.floor(Math.min(...last7DaysLogs.map(l => l.weight)) - 2) : 0;
+  const yMin =
+    filteredLogs.length > 0
+      ? Math.floor(Math.min(...filteredLogs.map(l => l.weight)) - 2)
+      : 0;
+
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -270,7 +281,7 @@ const Dashboard = () => {
     const firstLog = weightLogs[0].weight;
     const lastLog = weightLogs[weightLogs.length - 1].weight;
     const delta = (lastLog - firstLog).toFixed(1);
-    
+
     if (delta > 0) {
       if (userProfile?.goal === 'Muscle Gain') {
         weightInsight = `Awesome progress! Bulk is up ${delta}kg total. Keep eating dense calories!`;
@@ -281,11 +292,11 @@ const Dashboard = () => {
       }
     } else if (delta < 0) {
       if (userProfile?.goal === 'Weight Loss') {
-         weightInsight = `Incredible cutting momentum! You've lost ${Math.abs(delta)}kg overall.`;
-         insightColor = '#22c55e';
+        weightInsight = `Incredible cutting momentum! You've lost ${Math.abs(delta)}kg overall.`;
+        insightColor = '#22c55e';
       } else {
-         weightInsight = `Warning: Weight is dropping. You lost ${Math.abs(delta)}kg overall. Are you eating enough?`;
-         insightColor = '#ef4444';
+        weightInsight = `Warning: Weight is dropping. You lost ${Math.abs(delta)}kg overall. Are you eating enough?`;
+        insightColor = '#ef4444';
       }
     } else {
       weightInsight = `Weight has securely stabilized!`;
@@ -298,7 +309,7 @@ const Dashboard = () => {
   return (
     <div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '800px', margin: '0 auto', paddingBottom: '40px' }}>
-        
+
         {/* SECTION 1: WELCOME INTRO */}
         <div className="glass-panel">
           {profileError ? (
@@ -325,17 +336,17 @@ const Dashboard = () => {
           </div>
 
           {showScanner && (
-             <div style={{ marginBottom: '24px' }}>
-               <BarcodeScanner onScanSuccess={handleScanSuccess} />
-             </div>
+            <div style={{ marginBottom: '24px' }}>
+              <BarcodeScanner onScanSuccess={handleScanSuccess} />
+            </div>
           )}
 
           {loadingMsg && <p style={{ color: 'var(--accent-color)', marginBottom: '16px' }}>{loadingMsg}</p>}
 
           {scannedProduct && (
             <div style={{ marginBottom: '24px' }}>
-              <ProductCard 
-                product={scannedProduct} 
+              <ProductCard
+                product={scannedProduct}
                 onAddSuccess={handleAddSuccess}
                 onCancel={() => setScannedProduct(null)}
                 nutritionLimits={nutrition}
@@ -370,7 +381,8 @@ const Dashboard = () => {
         {/* SECTION 3: NUTRITION SUMMARY */}
         <div className="glass-panel">
           <h3 style={{ marginBottom: '16px' }}>Daily Requirements vs Intake</h3>
-          
+
+
           {profileError && (
             <div className="warning-box" style={{ marginTop: '16px' }}>
               ⚠ User data not loaded properly. Please re-login.
@@ -389,82 +401,150 @@ const Dashboard = () => {
 
           {!profileError && !nutritionError && nutrition && (
             <div style={{ marginTop: '20px' }}>
-              <ProgressBar 
-                label="Calories (TDEE)" 
-                current={todaysSummary.totalCalories} 
-                target={nutrition.calories} 
-                unit=" kcal" 
+              <ProgressBar
+                label="Calories (TDEE)"
+                current={todaysSummary.totalCalories}
+                target={nutrition.calories}
+                unit=" kcal"
                 unitOnlyAtEnd={true}
               />
-              <ProgressBar 
-                label="Protein Base" 
-                current={todaysSummary.totalProtein} 
-                target={nutrition.protein} 
-                unit="g" 
+              <ProgressBar
+                label="Protein Base"
+                current={todaysSummary.totalProtein}
+                target={nutrition.protein}
+                unit="g"
               />
-              <ProgressBar 
-                label="Dietary Fat" 
-                current={todaysSummary.totalFat} 
-                target={nutrition.fat} 
-                unit="g" 
+              <ProgressBar
+                label="Dietary Fat"
+                current={todaysSummary.totalFat}
+                target={nutrition.fat}
+                unit="g"
               />
-              <ProgressBar 
-                label="Max Sugar Threshold" 
-                current={todaysSummary.totalSugar} 
-                target={nutrition.sugar} 
-                unit="g" 
+              <ProgressBar
+                label="Max Sugar Threshold"
+                current={todaysSummary.totalSugar}
+                target={nutrition.sugar}
+                unit="g"
               />
             </div>
           )}
-          
+
           <div style={{ marginTop: '24px' }}>
-             <HealthRiskIndicator userDiseases={userProfile?.diseases || authUser?.diseases || []} todaysSummary={todaysSummary} />
+            <HealthRiskIndicator userDiseases={userProfile?.diseases || authUser?.diseases || []} todaysSummary={todaysSummary} />
           </div>
         </div>
 
-        {/* SECTION 4: WEIGHT TRACKING INPUT */}
-        <div className="glass-panel">
-          <h3 style={{ marginBottom: '16px' }}>Log Daily Metrics</h3>
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <input 
-              type="number" 
-              className="input" 
-              placeholder="Today's Weight (kg)" 
-              value={currentWeight}
-              onChange={(e) => setCurrentWeight(e.target.value)}
-              style={{ flex: 1, minWidth: '200px' }}
-            />
-            <button className="btn" onClick={handleSaveWeight} disabled={weightLoading} style={{ minWidth: '140px' }}>
-              {weightLoading ? 'Saving...' : 'Save Weight'}
-            </button>
-          </div>
-        </div>
+        {/* SECTION: WEIGHT TRACKING + CHART (COMBINED) */}
+<div className="glass-panel">
 
-        {/* SECTION 5: WEIGHT CHART DISPLAY */}
-        <div className="glass-panel">
-          <h3 style={{ marginBottom: '16px' }}>Historical Weight Progress</h3>
-          {chartLoading ? (
-            <div style={{ height: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-              <p style={{ color: 'var(--text-muted)' }}>Loading chart calculations...</p>
-            </div>
-          ) : weightLogs.length > 0 ? (
-            <div>
-              <div style={{ position: 'relative', height: '260px', width: '100%', marginBottom: '16px', overflow: 'hidden' }}>
-                <Line data={chartData} options={chartOptions} />
-              </div>
-              {weightInsight && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: insightColor, backgroundColor: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', marginTop: '16px' }}>
-                  <TrendingUp size={16} />
-                  <span style={{ fontSize: '0.95em' }}>{weightInsight}</span>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div style={{ height: '140px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-              <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '0 16px' }}>No weight data available to chart.<br/>Start manually logging your daily weight above!</p>
-            </div>
-          )}
+  {/* 🔹 HEADER */}
+  <h3 style={{ marginBottom: '16px' }}>Weight Tracking</h3>
+
+  {/* 🔹 INPUT ROW */}
+  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '20px' }}>
+    <input 
+      type="number" 
+      className="input" 
+      placeholder="Today's Weight (kg)" 
+      value={currentWeight}
+      onChange={(e) => setCurrentWeight(e.target.value)}
+      style={{ flex: 1, minWidth: '200px' }}
+    />
+    <button 
+      className="btn" 
+      onClick={handleSaveWeight} 
+      disabled={weightLoading}
+      style={{ minWidth: '140px' }}
+    >
+      {weightLoading ? 'Saving...' : 'Save Weight'}
+    </button>
+  </div>
+
+  {/* 🔹 RANGE BUTTONS */}
+  <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+    <button 
+      className="btn" 
+      onClick={() => setRange(7)}
+      style={{ background: range === 7 ? '#22c55e' : '' }}
+    >
+      7 Days
+    </button>
+    <button 
+      className="btn" 
+      onClick={() => setRange(15)}
+      style={{ background: range === 15 ? '#22c55e' : '' }}
+    >
+      15 Days
+    </button>
+    <button 
+      className="btn" 
+      onClick={() => setRange(30)}
+      style={{ background: range === 30 ? '#22c55e' : '' }}
+    >
+      30 Days
+    </button>
+  </div>
+
+  {/* 🔹 CHART */}
+  {chartLoading ? (
+    <div style={{
+      height: '220px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(255,255,255,0.05)',
+      borderRadius: '8px'
+    }}>
+      <p style={{ color: 'var(--text-muted)' }}>
+        Loading chart calculations...
+      </p>
+    </div>
+  ) : weightLogs.length > 0 ? (
+    <>
+      <div style={{
+        position: 'relative',
+        height: '260px',
+        width: '100%',
+        marginBottom: '16px'
+      }}>
+        <Line data={chartData} options={chartOptions} />
+      </div>
+
+      {/* 🔹 INSIGHT */}
+      {weightInsight && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          color: insightColor,
+          backgroundColor: 'rgba(255,255,255,0.05)',
+          padding: '12px',
+          borderRadius: '8px'
+        }}>
+          <TrendingUp size={16} />
+          <span style={{ fontSize: '0.95em' }}>
+            {weightInsight}
+          </span>
         </div>
+      )}
+    </>
+  ) : (
+    <div style={{
+      height: '140px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(255,255,255,0.05)',
+      borderRadius: '8px'
+    }}>
+      <p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>
+        No weight data available.<br/>
+        Start logging above!
+      </p>
+    </div>
+  )}
+
+</div>
 
       </div>
     </div>
