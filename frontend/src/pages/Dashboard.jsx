@@ -232,22 +232,31 @@ const Dashboard = () => {
   if (!authUser || (!userProfile && !profileError)) {
     return <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading...</div>;
   }
-  let suggestion = "";
 
-if (nutrition) {
-  if (todaysSummary.totalProtein < nutrition.protein) {
-    suggestion = "⚠ Low protein. Add eggs, chicken, paneer.";
-  } 
-  else if (todaysSummary.totalCalories > nutrition.calories) {
-    suggestion = "⚠ Calories exceeded. Reduce junk food.";
-  } 
-  else if (todaysSummary.totalSugar > nutrition.sugar) {
-    suggestion = "⚠ High sugar intake. Avoid sugary drinks.";
-  } 
-  else {
-    suggestion = "✅ Good job! Your diet is balanced.";
+  let suggestions = [];
+
+  if (nutrition) {
+
+    if (todaysSummary.totalProtein < nutrition.protein) {
+      suggestions.push("⚠ Low protein. Add eggs, chicken, paneer.");
+    }
+
+    if (todaysSummary.totalCalories > nutrition.calories) {
+      suggestions.push("⚠ Calories exceeded. Reduce junk food.");
+    }
+
+    if (todaysSummary.totalSugar > nutrition.sugar) {
+      suggestions.push("⚠ High sugar intake. Avoid sugary drinks.");
+    }
+
+    if (todaysSummary.totalFat > nutrition.fat) {
+      suggestions.push("⚠ High fat intake. Reduce fried foods.");
+    }
+
+    if (suggestions.length === 0) {
+      suggestions.push("✅ Great job! Your diet is balanced.");
+    }
   }
-}
 
 
   // Chart Logic (UPDATED WITH TOGGLE)
@@ -452,126 +461,132 @@ if (nutrition) {
         </div>
 
         <div style={{
-  marginTop: "20px",
-  padding: "12px",
-  background: "rgba(255,255,255,0.05)",
-  borderRadius: "8px"
-}}>
-  <strong>AI Suggestion:</strong>
-  <p>{suggestion}</p>
-</div>
+          marginTop: "20px",
+          padding: "12px",
+          background: "rgba(255,255,255,0.05)",
+          borderRadius: "8px"
+        }}>
+          <strong>AI Suggestion:</strong>
+          <div style={{ marginTop: "20px" }}>
+            <ul style={{ marginTop: "8px",marginLeft: "16px" }}>
+              {suggestions.map((s, i) => (
+                <li key={i}>{s}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
 
         {/* SECTION: WEIGHT TRACKING + CHART (COMBINED) */}
-<div className="glass-panel">
+        <div className="glass-panel">
 
-  {/* 🔹 HEADER */}
-  <h3 style={{ marginBottom: '16px' }}>Weight Tracking</h3>
+          {/* 🔹 HEADER */}
+          <h3 style={{ marginBottom: '16px' }}>Weight Tracking</h3>
 
-  {/* 🔹 INPUT ROW */}
-  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '20px' }}>
-    <input 
-      type="number" 
-      className="input" 
-      placeholder="Today's Weight (kg)" 
-      value={currentWeight}
-      onChange={(e) => setCurrentWeight(e.target.value)}
-      style={{ flex: 1, minWidth: '200px' }}
-    />
-    <button 
-      className="btn" 
-      onClick={handleSaveWeight} 
-      disabled={weightLoading}
-      style={{ minWidth: '140px' }}
-    >
-      {weightLoading ? 'Saving...' : 'Save Weight'}
-    </button>
-  </div>
+          {/* 🔹 INPUT ROW */}
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '20px' }}>
+            <input
+              type="number"
+              className="input"
+              placeholder="Today's Weight (kg)"
+              value={currentWeight}
+              onChange={(e) => setCurrentWeight(e.target.value)}
+              style={{ flex: 1, minWidth: '200px' }}
+            />
+            <button
+              className="btn"
+              onClick={handleSaveWeight}
+              disabled={weightLoading}
+              style={{ minWidth: '140px' }}
+            >
+              {weightLoading ? 'Saving...' : 'Save Weight'}
+            </button>
+          </div>
 
-  {/* 🔹 RANGE BUTTONS */}
-  <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
-    <button 
-      className="btn" 
-      onClick={() => setRange(7)}
-      style={{ background: range === 7 ? '#22c55e' : '' }}
-    >
-      7 Days
-    </button>
-    <button 
-      className="btn" 
-      onClick={() => setRange(15)}
-      style={{ background: range === 15 ? '#22c55e' : '' }}
-    >
-      15 Days
-    </button>
-    <button 
-      className="btn" 
-      onClick={() => setRange(30)}
-      style={{ background: range === 30 ? '#22c55e' : '' }}
-    >
-      30 Days
-    </button>
-  </div>
+          {/* 🔹 RANGE BUTTONS */}
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+            <button
+              className="btn"
+              onClick={() => setRange(7)}
+              style={{ background: range === 7 ? '#22c55e' : '' }}
+            >
+              7 Days
+            </button>
+            <button
+              className="btn"
+              onClick={() => setRange(15)}
+              style={{ background: range === 15 ? '#22c55e' : '' }}
+            >
+              15 Days
+            </button>
+            <button
+              className="btn"
+              onClick={() => setRange(30)}
+              style={{ background: range === 30 ? '#22c55e' : '' }}
+            >
+              30 Days
+            </button>
+          </div>
 
-  {/* 🔹 CHART */}
-  {chartLoading ? (
-    <div style={{
-      height: '220px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: 'rgba(255,255,255,0.05)',
-      borderRadius: '8px'
-    }}>
-      <p style={{ color: 'var(--text-muted)' }}>
-        Loading chart calculations...
-      </p>
-    </div>
-  ) : weightLogs.length > 0 ? (
-    <>
-      <div style={{
-        position: 'relative',
-        height: '260px',
-        width: '100%',
-        marginBottom: '16px'
-      }}>
-        <Line data={chartData} options={chartOptions} />
-      </div>
+          {/* 🔹 CHART */}
+          {chartLoading ? (
+            <div style={{
+              height: '220px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'rgba(255,255,255,0.05)',
+              borderRadius: '8px'
+            }}>
+              <p style={{ color: 'var(--text-muted)' }}>
+                Loading chart calculations...
+              </p>
+            </div>
+          ) : weightLogs.length > 0 ? (
+            <>
+              <div style={{
+                position: 'relative',
+                height: '260px',
+                width: '100%',
+                marginBottom: '16px'
+              }}>
+                <Line data={chartData} options={chartOptions} />
+              </div>
 
-      {/* 🔹 INSIGHT */}
-      {weightInsight && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          color: insightColor,
-          backgroundColor: 'rgba(255,255,255,0.05)',
-          padding: '12px',
-          borderRadius: '8px'
-        }}>
-          <TrendingUp size={16} />
-          <span style={{ fontSize: '0.95em' }}>
-            {weightInsight}
-          </span>
+              {/* 🔹 INSIGHT */}
+              {weightInsight && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  color: insightColor,
+                  backgroundColor: 'rgba(255,255,255,0.05)',
+                  padding: '12px',
+                  borderRadius: '8px'
+                }}>
+                  <TrendingUp size={16} />
+                  <span style={{ fontSize: '0.95em' }}>
+                    {weightInsight}
+                  </span>
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{
+              height: '140px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'rgba(255,255,255,0.05)',
+              borderRadius: '8px'
+            }}>
+              <p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>
+                No weight data available.<br />
+                Start logging above!
+              </p>
+            </div>
+          )}
+
         </div>
-      )}
-    </>
-  ) : (
-    <div style={{
-      height: '140px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: 'rgba(255,255,255,0.05)',
-      borderRadius: '8px'
-    }}>
-      <p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>
-        No weight data available.<br/>
-        Start logging above!
-      </p>
-    </div>
-  )}
-
-</div>
 
       </div>
     </div>
