@@ -232,6 +232,23 @@ const Dashboard = () => {
   if (!authUser || (!userProfile && !profileError)) {
     return <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading...</div>;
   }
+  let suggestion = "";
+
+if (nutrition) {
+  if (todaysSummary.totalProtein < nutrition.protein) {
+    suggestion = "⚠ Low protein. Add eggs, chicken, paneer.";
+  } 
+  else if (todaysSummary.totalCalories > nutrition.calories) {
+    suggestion = "⚠ Calories exceeded. Reduce junk food.";
+  } 
+  else if (todaysSummary.totalSugar > nutrition.sugar) {
+    suggestion = "⚠ High sugar intake. Avoid sugary drinks.";
+  } 
+  else {
+    suggestion = "✅ Good job! Your diet is balanced.";
+  }
+}
+
 
   // Chart Logic (UPDATED WITH TOGGLE)
   const filteredLogs = weightLogs.slice(-range);
@@ -433,6 +450,16 @@ const Dashboard = () => {
             <HealthRiskIndicator userDiseases={userProfile?.diseases || authUser?.diseases || []} todaysSummary={todaysSummary} />
           </div>
         </div>
+
+        <div style={{
+  marginTop: "20px",
+  padding: "12px",
+  background: "rgba(255,255,255,0.05)",
+  borderRadius: "8px"
+}}>
+  <strong>AI Suggestion:</strong>
+  <p>{suggestion}</p>
+</div>
 
         {/* SECTION: WEIGHT TRACKING + CHART (COMBINED) */}
 <div className="glass-panel">
