@@ -346,25 +346,37 @@ const Dashboard = () => {
     ],
   };
 
-  const yMin =
-    filteredLogs.length > 0
-      ? Math.floor(Math.min(...filteredLogs.map((l) => l.weight)) - 2)
-      : 0;
+  const weights = filteredLogs.map((l) => l.weight);
+
+const minWeight = Math.min(...weights);
+const maxWeight = Math.max(...weights);
+
+const weightRange = maxWeight - minWeight;
+
+const padding = weightRange < 2 ? 0.5 : weightRange * 0.3;
+
+const yMin = Math.max(Math.floor(minWeight - padding), 0);
+const yMax = Math.ceil(maxWeight + padding);
 
   const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      title: { display: false },
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: false },
+    title: { display: false },
+  },
+  scales: {
+    y: {
+      min: yMin,
+      max: yMax,
+      ticks: {
+        stepSize: 0.5,
+      },
     },
-    scales: {
-      y: { min: Math.max(yMin, 0) },
-    },
-  };
+  },
+}; // ✅ VERY IMPORTANT
 
-  // Insight Generator
-  let weightInsight = "";
+let weightInsight = "";
   let insightColor = "var(--accent-color)";
   if (weightLogs.length > 1) {
     const firstLog = weightLogs[0].weight;
