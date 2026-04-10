@@ -1,257 +1,86 @@
 import React, { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
 import api from "../services/api";
-import BarcodeScanner from "../components/BarcodeScanner";
-import ProductCard from "../components/ProductCard";
-import HealthRiskIndicator from "../components/HealthRiskIndicator";
-import {
-  ScanBarcode,
-  Trash2,
-  Edit,
-  TrendingUp,
+import { 
+  TrendingUp, 
+  TrendingDown, 
+  Minus, 
+  Target, 
+  Zap, 
+  Brain, 
   AlertCircle,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  UtensilsCrossed,
+  Info,
+  Flame
 } from "lucide-react";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-} from "chart.js";
-import { Line } from "react-chartjs-2";
-
-// Register Chart.js globally
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-);
-
-const ProgressBar = ({ label, current, target, unit, unitOnlyAtEnd }) => {
-  const safeTarget = target || 1;
-  const rawPercent = (current / safeTarget) * 100;
-  const visualPercent = Math.min(rawPercent, 100);
-
-  let color = "#22c55e";
-  if (rawPercent > 80) color = "#f59e0b";
-  if (rawPercent >= 100) color = "#ef4444";
-
-  const currentDisplay = current % 1 === 0 ? current : current.toFixed(1);
-
-  return (
-    <div style={{ marginBottom: "16px" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: "6px",
-          fontSize: "0.9em",
-        }}
-      >
-        <span>{label}</span>
-        <strong>
-          {currentDisplay}
-          {unitOnlyAtEnd ? "" : unit} / {target}
-          {unit} ({Math.round(rawPercent)}%)
-        </strong>
-      </div>
-      <div
-        style={{
-          width: "100%",
-          backgroundColor: "rgba(255,255,255,0.1)",
-          height: "8px",
-          borderRadius: "4px",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            width: `${visualPercent}%`,
-            backgroundColor: color,
-            height: "100%",
-            transition: "width 0.3s",
-          }}
-        ></div>
-      </div>
-    </div>
-  );
-};
+import { 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  AreaChart,
+  Area
+} from 'recharts';
+import Layout from "../components/Layout";
 
 const Dashboard = () => {
   const { user: authUser } = useContext(AuthContext);
-  const navigate = useNavigate();
-
-  const [intakes, setIntakes] = useState([]);
-  const [showScanner, setShowScanner] = useState(false);
-  const [scannedProduct, setScannedProduct] = useState(null);
-  const [loadingMsg, setLoadingMsg] = useState("");
-  const [range, setRange] = useState(15); // default 15 days
-
   const [userProfile, setUserProfile] = useState(null);
-  const [profileError, setProfileError] = useState("");
-
-  const [nutrition, setNutrition] = useState(null);
-  const [nutritionError, setNutritionError] = useState("");
-
-  // Feature 2: Weight tracking states
   const [weightLogs, setWeightLogs] = useState([]);
-  const [currentWeight, setCurrentWeight] = useState("");
-  const [weightLoading, setWeightLoading] = useState(false);
-  const [chartLoading, setChartLoading] = useState(true); // Added explicitly for loading states
+  const [intakes, setIntakes] = useState([]);
+  const [nutrition, setNutrition] = useState(null);
+  const [range, setRange] = useState(15);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await api.get("/auth/me");
-        console.log("USER:", res.data);
-        setUserProfile(res.data);
-      } catch (err) {
-        console.error(err);
-        setProfileError("Failed to load user");
-      }
-    };
-
     if (authUser) {
-      fetchUser();
-      fetchIntakes();
-      fetchWeightLogs();
+      fetchAllData();
     }
   }, [authUser]);
 
-  const fetchIntakes = async () => {
+  const fetchAllData = async () => {
+    setLoading(true);
     try {
-      const { data } = await api.get("/intake");
-      console.log("INTAKE:", data);
-      setIntakes(data);
-    } catch (error) {
-      console.error("Failed to fetch intakes", error);
-    }
-  };
-
-  const fetchWeightLogs = async () => {
-    setChartLoading(true);
-    try {
-      const { data } = await api.get("/weight");
-      setWeightLogs(data);
+      const [profileRes, weightRes, intakeRes] = await Promise.all([
+        api.get("/auth/me"),
+        api.get("/weight"),
+        api.get("/intake")
+      ]);
+      setUserProfile(profileRes.data);
+      setWeightLogs(weightRes.data);
+      setIntakes(intakeRes.data);
     } catch (err) {
-      console.error("Failed to fetch weight logs", err);
+      console.error(err);
     } finally {
-      setChartLoading(false);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     if (userProfile) {
-      const weight = Number(userProfile.weight) || 0;
-      const height = Number(userProfile.height) || 0;
-      const age = Number(userProfile.age) || 0;
+      const weight = weightLogs.length > 0 ? weightLogs[weightLogs.length - 1].weight : userProfile.weight;
+      const { height, age, gender, activityLevel, goal } = userProfile;
+      if (!weight || !height || !age) return;
 
-      if (!weight || !height || !age) {
-        setNutritionError(
-          "⚠ Unable to calculate nutrition. Check profile details.",
-        );
-        return;
-      }
-      setNutritionError("");
-
-      let bmr = 10 * weight + 6.25 * height - 5 * age;
-      bmr += userProfile.gender === "Male" ? 5 : -161;
-
-      const activityFactors = {
-        Sedentary: 1.2,
-        "Lightly Active": 1.375,
-        "Moderately Active": 1.55,
-        "Very Active": 1.725,
-      };
-
-      let tdee = bmr * (activityFactors[userProfile.activityLevel] || 1.2);
-
-      if (userProfile.goal === "Weight Loss") tdee -= 300;
-      if (userProfile.goal === "Muscle Gain") tdee += 300;
-
-      const calories = Math.max(Math.round(tdee), 1200);
-      const protein = Math.round(weight * 1.8);
-      const fat = Math.round((calories * 0.25) / 9);
-      const sugar = 30;
+      let bmr = 10 * weight + 6.25 * height - 5 * age + (gender === "Male" ? 5 : -161);
+      const factors = { Sedentary: 1.2, "Lightly Active": 1.375, "Moderately Active": 1.55, "Very Active": 1.725 };
+      let tdee = bmr * (factors[activityLevel] || 1.2);
+      
+      if (goal === "Weight Loss") tdee -= 300;
+      if (goal === "Muscle Gain") tdee += 300;
 
       setNutrition({
-        calories,
-        protein,
-        fat,
-        sugar,
+        calories: Math.max(Math.round(tdee), 1200),
+        protein: Math.round(weight * 1.8),
+        fat: Math.round((tdee * 0.25) / 9),
+        sugar: 30
       });
     }
-  }, [userProfile]);
-
-  const handleScanSuccess = async (barcode, resumeScanning) => {
-    setShowScanner(false);
-    setLoadingMsg(`Looking up product ${barcode}...`);
-    try {
-      const { data } = await api.get(`/scan/${barcode}`);
-      setScannedProduct(data);
-    } catch (error) {
-      alert(error.response?.data?.message || "Product not found");
-      resumeScanning();
-    } finally {
-      setLoadingMsg("");
-    }
-  };
-
-  const handleAddSuccess = () => {
-    setScannedProduct(null);
-    fetchIntakes();
-  };
-
-  const handleEdit = (intake) => {
-    const ratio = intake.grams > 0 ? 100 / intake.grams : 0;
-    const fakeProductData = {
-      _id: intake._id,
-      productName: intake.productName,
-      calories: intake.calories * ratio || 0,
-      protein: intake.protein * ratio || 0,
-      fat: intake.fat * ratio || 0,
-      sugar: intake.sugar * ratio || 0,
-      isEdit: true,
-      initialGrams: intake.grams,
-      initialDays: intake.days,
-    };
-    setScannedProduct(fakeProductData);
-  };
-
-  const handleDelete = async (id) => {
-    if (window.confirm("Delete this entry?")) {
-      try {
-        await api.delete(`/intake/${id}`);
-        fetchIntakes();
-      } catch (error) {
-        alert("Failed to delete");
-      }
-    }
-  };
-
-  const handleSaveWeight = async () => {
-    if (!currentWeight || Number(currentWeight) <= 0) return;
-    setWeightLoading(true);
-    try {
-      await api.post("/weight", { weight: Number(currentWeight) });
-      fetchWeightLogs();
-      setCurrentWeight("");
-      setUserProfile((prev) => ({ ...prev, weight: Number(currentWeight) }));
-    } catch (err) {
-      console.error(err);
-      alert("Failed to save weight");
-    } finally {
-      setWeightLoading(false);
-    }
-  };
+  }, [userProfile, weightLogs]);
 
   const todaysSummary = intakes.reduce(
     (acc, curr) => {
@@ -261,498 +90,287 @@ const Dashboard = () => {
       acc.totalSugar += curr.sugar || 0;
       return acc;
     },
-    { totalCalories: 0, totalFat: 0, totalProtein: 0, totalSugar: 0 },
+    { totalCalories: 0, totalFat: 0, totalProtein: 0, totalSugar: 0 }
   );
 
-  if (!authUser || (!userProfile && !profileError)) {
-    return (
-      <div
-        style={{
-          padding: "40px",
-          textAlign: "center",
-          color: "var(--text-muted)",
-        }}
-      >
-        Loading...
-      </div>
-    );
-  }
+  const getAISuggestions = () => {
+    if (!nutrition) return [];
+    const suggestions = [];
+    const { diseases } = userProfile || {};
 
-  let suggestions = [];
+    if (todaysSummary.totalProtein < nutrition.protein * 0.8) {
+      suggestions.push({ type: 'warning', text: "Protein intake is low. Consider adding eggs or lean meat." });
+    }
+    if (todaysSummary.totalSugar > nutrition.sugar) {
+      suggestions.push({ type: 'danger', text: "Sugar limit exceeded. Highly recommended to skip sweets today." });
+    }
+    
+    if (diseases?.includes('Diabetes') && todaysSummary.totalSugar > 25) {
+      suggestions.push({ type: 'danger', text: "Risk Alert: Sugar is high for your Diabetes profile!" });
+    }
+    if (diseases?.includes('Hypertension') && todaysSummary.totalFat > 50) {
+      suggestions.push({ type: 'warning', text: "Hypertension Note: Moderate your fat intake for better blood pressure." });
+    }
 
- if (nutrition) {
-  if (todaysSummary.totalProtein < nutrition.protein) {
-    suggestions.push(
-      <span>
-        <span style={{ color: "#3b82f6" }}>⚠</span> Low protein - Add eggs, chicken, paneer.
-      </span>
-    );
-  }
-
-  if (todaysSummary.totalCalories > nutrition.calories) {
-    suggestions.push(
-      <span>
-        <span style={{ color: "#a855f7" }}>⚠</span> Calories exceeded - Reduce junk food.
-      </span>
-    );
-  }
-
-  if (todaysSummary.totalSugar > nutrition.sugar) {
-    suggestions.push(
-      <span>
-        <span style={{ color: "orange" }}>⚠</span> High sugar intake - Avoid sugary drinks.
-      </span>
-    );
-  }
-
-  if (todaysSummary.totalFat > nutrition.fat) {
-    suggestions.push(
-      <span>
-        <span style={{ color: "red" }}>⚠</span> High fat intake - Reduce fried foods.
-      </span>
-    );
-  }
-
-  if (suggestions.length === 0) {
-    suggestions.push(
-      <span style={{ color: "#22c55e" }}>
-        ✅ Great job! Your diet is balanced.
-      </span>
-    );
-  }
-}
-
-  // Chart Logic (UPDATED WITH TOGGLE)
-  const filteredLogs = weightLogs.slice(-range);
-
-  const chartData = {
-    labels: filteredLogs.map((log) =>
-      new Date(log.date).toLocaleDateString(undefined, {
-        month: "short",
-        day: "numeric",
-      }),
-    ),
-    datasets: [
-      {
-        label: "Weight (kg)",
-        data: filteredLogs.map((log) => log.weight),
-        borderColor: "rgba(34, 197, 94, 1)",
-        backgroundColor: "rgba(34, 197, 94, 0.2)",
-        pointBackgroundColor: "#fff",
-        pointBorderColor: "rgba(34, 197, 94, 1)",
-        tension: 0.4,
-        fill: true,
-      },
-    ],
+    if (suggestions.length === 0) {
+      suggestions.push({ type: 'success', text: "Everything looks great! You're hitting your targets." });
+    }
+    return suggestions;
   };
 
-  const weights = filteredLogs.map((l) => l.weight);
-
-const minWeight = Math.min(...weights);
-const maxWeight = Math.max(...weights);
-
-const weightRange = maxWeight - minWeight;
-
-const padding = weightRange < 2 ? 0.5 : weightRange * 0.3;
-
-const yMin = Math.max(Math.floor(minWeight - padding), 0);
-const yMax = Math.ceil(maxWeight + padding);
-
-  const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: { display: false },
-    title: { display: false },
-  },
-  scales: {
-    y: {
-      min: yMin,
-      max: yMax,
-      ticks: {
-        stepSize: 0.5,
-      },
-    },
-  },
-}; // ✅ VERY IMPORTANT
-
-let weightInsight = "";
-  let insightColor = "var(--accent-color)";
-  if (weightLogs.length > 1) {
-    const firstLog = weightLogs[0].weight;
-    const lastLog = weightLogs[weightLogs.length - 1].weight;
-    const delta = (lastLog - firstLog).toFixed(1);
-
-    if (delta > 0) {
-      if (userProfile?.goal === "Muscle Gain") {
-        weightInsight = `Awesome progress! Bulk is up ${delta}kg total. Keep eating dense calories!`;
-        insightColor = "#22c55e";
-      } else {
-        weightInsight = `Trend Alert: You are up ${delta}kg overall. Keep a close eye on your caloric surplus.`;
-        insightColor = "#f59e0b";
-      }
-    } else if (delta < 0) {
-      if (userProfile?.goal === "Weight Loss") {
-        weightInsight = `Incredible cutting momentum! You've lost ${Math.abs(delta)}kg overall.`;
-        insightColor = "#22c55e";
-      } else {
-        weightInsight = `Warning: Weight is dropping. You lost ${Math.abs(delta)}kg overall. Are you eating enough?`;
-        insightColor = "#ef4444";
-      }
-    } else {
-      weightInsight = `Weight has securely stabilized!`;
+  const getSmartMealSuggestions = () => {
+    if (!nutrition) return [];
+    const suggestions = [];
+    
+    if (todaysSummary.totalProtein < nutrition.protein * 0.7) {
+      suggestions.push({ icon: '⚠️', text: "Low Protein: Include Eggs, Paneer, or Chicken Breast in your next meal." });
     }
-  } else if (weightLogs.length === 1) {
-    weightInsight = `Baseline captured! Check back in tomorrow to unlock algorithmic trend insights.`;
+    if (todaysSummary.totalCalories < nutrition.calories * 0.6) {
+      suggestions.push({ icon: '⚠️', text: "Energy Gap: Add Rice, Oats, or Bananas to hit your calorie goal." });
+    }
+    if (todaysSummary.totalFat > nutrition.fat) {
+      suggestions.push({ icon: '🚫', text: "Fat Limit Reached: Opt for steamed or grilled options; avoid oily foods." });
+    }
+    if (todaysSummary.totalSugar > nutrition.sugar) {
+      suggestions.push({ icon: '🚫', text: "Sugar Alert: High sugar intake detected. Skip soft drinks and sweets today." });
+    }
+
+    if (suggestions.length === 0) {
+      suggestions.push({ icon: '✅', text: "Your diet is perfectly balanced today. Keep up the clean eating!" });
+    }
+    return suggestions;
+  };
+
+  const chartData = weightLogs.slice(-range).map(log => ({
+    date: new Date(log.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+    weight: log.weight
+  }));
+
+  const latestWeight = weightLogs.length > 0 ? weightLogs[weightLogs.length - 1].weight : (userProfile?.weight || 0);
+  const startWeight = weightLogs.length > 0 ? weightLogs[0].weight : (userProfile?.weight || 0);
+  
+  let targetWeight = latestWeight;
+  const isMaintain = userProfile?.goal === 'Maintain Weight';
+  
+  if (userProfile?.goal === 'Weight Loss') targetWeight = startWeight - 5;
+  else if (userProfile?.goal === 'Muscle Gain') targetWeight = startWeight + 5;
+
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const recentLogs = weightLogs.filter(log => new Date(log.date) >= sevenDaysAgo);
+  
+  let isOnTrack = true;
+  let recentDiff = 0;
+  if (recentLogs.length > 1) {
+    const prevWeight = recentLogs[0].weight;
+    const currentWeight = recentLogs[recentLogs.length - 1].weight;
+    recentDiff = currentWeight - prevWeight;
+    if (userProfile?.goal === 'Weight Loss') isOnTrack = currentWeight <= prevWeight;
+    else if (userProfile?.goal === 'Muscle Gain') isOnTrack = currentWeight >= prevWeight;
+    else isOnTrack = Math.abs(currentWeight - prevWeight) <= 0.5;
   }
 
-  // Linear layout mapping for flawless mobile structure
-  return (
-    <div>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "24px",
-          maxWidth: "800px",
-          margin: "0 auto",
-          paddingBottom: "40px",
-        }}
-      >
-        {/* SECTION 1: WELCOME INTRO */}
-        <div className="glass-panel">
-          {profileError ? (
-            <p className="warning-box">
-              ⚠ Failed to load data. Please re-login.
-            </p>
-          ) : userProfile ? (
-            <>
-              <h3>Welcome back, {userProfile.name}</h3>
-              <p style={{ color: "var(--text-muted)", marginTop: "8px" }}>
-                Goal: {userProfile.goal} | Activity Level:{" "}
-                {userProfile.activityLevel}
-              </p>
-            </>
-          ) : (
-            <p style={{ color: "var(--text-muted)" }}>
-              Loading profile data...
-            </p>
-          )}
-        </div>
+  const weightDiff = weightLogs.length > 1 
+    ? (latestWeight - startWeight).toFixed(1)
+    : 0;
 
-        {/* SECTION 2: DIET PLAN */}
-        <div className="glass-panel">
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "16px",
-              flexWrap: "wrap",
-              gap: "8px",
-            }}
-          >
-            <h3>Your Diet Plan</h3>
-            <button
-              className="btn"
-              onClick={() => setShowScanner(!showScanner)}
-            >
-              <ScanBarcode size={16} /> Scan Product
-            </button>
+  const progressPercent = Math.abs(startWeight - targetWeight) > 0
+    ? Math.min(Math.round(Math.abs(startWeight - latestWeight) / Math.abs(startWeight - targetWeight) * 100), 100)
+    : 0;
+
+  if (loading) return <Layout><div className="fade-in">Loading your health dashboard...</div></Layout>;
+
+  return (
+    <Layout>
+      <div className="fade-in">
+        <header style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <h1 className="gradient-text">Dashboard</h1>
+            <p style={{ color: 'var(--text-secondary)' }}>Welcome back, {userProfile?.name}. Here's your status.</p>
+          </div>
+          
+          <div className="glass-card" style={{ padding: '8px 16px', display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <div style={{ textAlign: 'right' }}>
+              <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Current</p>
+              <p style={{ fontWeight: 700, fontSize: '1.1rem' }}>{latestWeight}kg</p>
+            </div>
+            <div style={{ width: '1px', background: 'var(--glass-border)', height: '24px' }} />
+            <div style={{ textAlign: 'right' }}>
+              <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Target</p>
+              <p style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--accent-neon)' }}>{isMaintain ? latestWeight : targetWeight}kg</p>
+            </div>
+            <div style={{ width: '1px', background: 'var(--glass-border)', height: '24px' }} />
+            <div style={{ textAlign: 'right' }}>
+              <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Status</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: isOnTrack ? 'var(--accent-neon)' : 'var(--danger)' }}>
+                {isOnTrack ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+                <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{isOnTrack ? 'On Track' : 'Off Track'}</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="grid-mobile-1" style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '20px' }}>
+          
+          {/* Main Stat Cards */}
+          <StatCard 
+            icon={<Zap size={22} />} 
+            label="Daily Energy" 
+            current={todaysSummary.totalCalories} 
+            target={nutrition?.calories} 
+            color="var(--secondary-blue)" 
+          />
+          <StatCard 
+            icon={<Target size={22} />} 
+            label="Total Change" 
+            current={weightDiff} 
+            unit="kg" 
+            color={Number(weightDiff) <= 0 ? "var(--accent-neon)" : "var(--danger)"} 
+            isTrend
+          />
+          <StatCard 
+            icon={<Flame size={22} />} 
+            label="Daily Protein" 
+            current={todaysSummary.totalProtein} 
+            target={nutrition?.protein} 
+            unit="g"
+            color="#a855f7" 
+          />
+
+          {/* Row 1: Chart & AI Insights */}
+          <div className="glass-panel grid-span-full-mobile" style={{ gridColumn: 'span 8', padding: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><TrendingUp size={20} className="text-secondary-blue" /> Weight progress</h3>
+              <div className="glass-card" style={{ padding: '4px', display: 'flex', gap: '4px' }}>
+                {[7, 15, 30].map(d => (
+                  <button key={d} onClick={() => setRange(d)} style={{ 
+                    padding: '4px 10px', borderRadius: '6px', border: 'none', 
+                    background: range === d ? 'var(--secondary-blue)' : 'transparent',
+                    color: range === d ? 'white' : 'var(--text-secondary)',
+                    fontSize: '0.7rem', cursor: 'pointer'
+                  }}>{d}D</button>
+                ))}
+              </div>
+            </div>
+            <div style={{ width: '100%', height: '260px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--accent-neon)" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="var(--accent-neon)" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: 'var(--text-muted)', fontSize: 10}} dy={10} />
+                  <YAxis hide domain={['dataMin - 1', 'dataMax + 1']} />
+                  <Tooltip contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--glass-border)', borderRadius: '12px', fontSize: '11px' }} />
+                  <Area type="monotone" dataKey="weight" stroke="var(--accent-neon)" strokeWidth={2} fillOpacity={1} fill="url(#colorWeight)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
-          {showScanner && (
-            <div style={{ marginBottom: "24px" }}>
-              <BarcodeScanner onScanSuccess={handleScanSuccess} />
+          <div className="glass-panel grid-span-full-mobile" style={{ gridColumn: 'span 4', padding: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+              <Brain size={18} style={{ color: 'var(--accent-neon)' }} />
+              <h3>AI Insights</h3>
             </div>
-          )}
-
-          {loadingMsg && (
-            <p style={{ color: "var(--accent-color)", marginBottom: "16px" }}>
-              {loadingMsg}
-            </p>
-          )}
-
-          {scannedProduct && (
-            <div style={{ marginBottom: "24px" }}>
-              <ProductCard
-                product={scannedProduct}
-                onAddSuccess={handleAddSuccess}
-                onCancel={() => setScannedProduct(null)}
-                nutritionLimits={nutrition}
-                todaysSummary={todaysSummary}
-              />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {getAISuggestions().map((s, i) => (
+                <div key={i} className="glass-card" style={{ 
+                  display: 'flex', gap: '10px', padding: '12px',
+                  borderColor: s.type === 'danger' ? 'rgba(239, 68, 68, 0.3)' : 'var(--glass-border)',
+                  background: s.type === 'danger' ? 'rgba(239, 68, 68, 0.05)' : 'var(--glass-highlight)'
+                }}>
+                  <AlertCircle size={16} style={{ flexShrink: 0, color: s.type === 'danger' ? 'var(--danger)' : s.type === 'warning' ? 'var(--warning)' : 'var(--accent-neon)' }} />
+                  <p style={{ fontSize: '0.75rem', lineHeight: '1.4' }}>{s.text}</p>
+                </div>
+              ))}
             </div>
-          )}
+          </div>
 
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-          >
-            {intakes.length === 0 && (
-              <p style={{ color: "var(--text-muted)" }}>
-                No items in your diet plan yet.
+          {/* Row 2: Goal Progress & Meal Suggestions */}
+          <div className="glass-panel grid-span-full-mobile" style={{ gridColumn: 'span 4', padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+            <h3 style={{ marginBottom: '20px', fontSize: '1rem', width: '100%' }}>Goal status</h3>
+            {isMaintain ? (
+              <div className="fade-in">
+                <div style={{ 
+                  width: '120px', height: '120px', borderRadius: '50%', margin: '0 auto 16px',
+                  border: `4px solid ${isOnTrack ? 'var(--accent-neon)' : 'var(--warning)'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'rgba(255,255,255,0.02)'
+                }}>
+                  <Target size={40} style={{ color: isOnTrack ? 'var(--accent-neon)' : 'var(--warning)' }} />
+                </div>
+                <h4 style={{ color: isOnTrack ? 'var(--accent-neon)' : 'var(--warning)', fontSize: '1.25rem' }}>
+                  {isOnTrack ? 'Stable' : 'Fluctuating'}
+                </h4>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '8px' }}>
+                  Weekly change: {recentDiff > 0 ? `+${recentDiff.toFixed(1)}` : recentDiff.toFixed(1)}kg
+                </p>
+              </div>
+            ) : (
+              <div style={{ position: 'relative', width: '160px', height: '160px' }}>
+                <svg width="160" height="160" viewBox="0 0 160 160">
+                  <circle cx="80" cy="80" r="70" fill="transparent" stroke="rgba(255,255,255,0.05)" strokeWidth="12" />
+                  <circle 
+                    cx="80" cy="80" r="70" fill="transparent" 
+                    stroke="var(--accent-neon)" strokeWidth="12" 
+                    strokeDasharray={440} strokeDashoffset={440 - (440 * progressPercent) / 100}
+                    strokeLinecap="round" transform="rotate(-90 80 80)"
+                    style={{ transition: 'stroke-dashoffset 1s ease-out' }}
+                  />
+                </svg>
+                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+                  <p style={{ fontSize: '1.5rem', fontWeight: 700 }}>{progressPercent}%</p>
+                  <p style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Achieved</p>
+                </div>
+              </div>
+            )}
+            {!isMaintain && (
+              <p style={{ marginTop: '16px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                Target: {targetWeight}kg
               </p>
             )}
-            {intakes.map((intake) => (
-              <div
-                key={intake._id}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  backgroundColor: "rgba(255,255,255,0.02)",
-                  padding: "12px 16px",
-                  borderRadius: "8px",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                }}
-              >
-                <div>
-                  <h4 style={{ color: "var(--accent-color)" }}>
-                    {intake.productName}
-                  </h4>
-                  <p
-                    style={{
-                      fontSize: "0.9em",
-                      color: "var(--text-muted)",
-                      marginTop: "4px",
-                    }}
-                  >
-                    {intake.grams}g • {intake.calories} kcal •{" "}
-                    {intake.days.join(", ")}
-                  </p>
-                </div>
-                <div style={{ display: "flex", gap: "8px" }}>
-                  <button
-                    onClick={() => handleEdit(intake)}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: "var(--accent-color)",
-                      cursor: "pointer",
-                    }}
-                    title="Edit Intake"
-                  >
-                    <Edit size={20} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(intake._id)}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: "var(--danger-color)",
-                      cursor: "pointer",
-                    }}
-                    title="Delete Intake"
-                  >
-                    <Trash2 size={20} />
-                  </button>
-                </div>
-              </div>
-            ))}
           </div>
-        </div>
 
-        {/* SECTION 3: NUTRITION SUMMARY */}
-        <div className="glass-panel">
-          <h3 style={{ marginBottom: "16px" }}>Daily Requirements vs Intake</h3>
-
-          {profileError && (
-            <div className="warning-box" style={{ marginTop: "16px" }}>
-              ⚠ User data not loaded properly. Please re-login.
+          <div className="glass-panel grid-span-full-mobile" style={{ gridColumn: 'span 8', padding: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+              <UtensilsCrossed size={18} style={{ color: 'var(--secondary-blue)' }} />
+              <h3>Smart Meal Suggestions</h3>
             </div>
-          )}
-
-          {!profileError && nutritionError && (
-            <div className="warning-box" style={{ marginTop: "16px" }}>
-              {nutritionError}
-            </div>
-          )}
-
-          {!profileError && !nutritionError && !nutrition && (
-            <p style={{ marginTop: "16px", color: "var(--text-muted)" }}>
-              Calculating nutrition computations...
-            </p>
-          )}
-
-          {!profileError && !nutritionError && nutrition && (
-            <div style={{ marginTop: "20px" }}>
-              <ProgressBar
-                label="Calories"
-                current={todaysSummary.totalCalories}
-                target={nutrition.calories}
-                unit=" kcal"
-                unitOnlyAtEnd={true}
-              />
-              <ProgressBar
-                label="Protein"
-                current={todaysSummary.totalProtein}
-                target={nutrition.protein}
-                unit="g"
-              />
-              <ProgressBar
-                label="Fats"
-                current={todaysSummary.totalFat}
-                target={nutrition.fat}
-                unit="g"
-              />
-              <ProgressBar
-                label="Added Sugar"
-                current={todaysSummary.totalSugar}
-                target={nutrition.sugar}
-                unit="g"
-              />
-            </div>
-          )}
-
-          <div style={{ marginTop: "24px" }}>
-            <HealthRiskIndicator
-              userDiseases={userProfile?.diseases || authUser?.diseases || []}
-              todaysSummary={todaysSummary}
-            />
-          </div>
-        </div>
-
-        <div
-          style={{
-            marginTop: "20px",
-            padding: "12px",
-            background: "rgba(255,255,255,0.05)",
-            borderRadius: "8px",
-          }}
-        >
-          <strong>AI Suggestion:</strong>
-          <div style={{ marginTop: "20px" }}>
-            <ul style={{ marginTop: "8px", marginLeft: "16px" }}>
-              {suggestions.map((s, i) => (
-                <li key={i}>{s}</li>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }} className="grid-mobile-1">
+              {getSmartMealSuggestions().map((s, i) => (
+                <div key={i} className="glass-card" style={{ display: 'flex', gap: '12px', padding: '16px', alignItems: 'center' }}>
+                  <span style={{ fontSize: '1.25rem' }}>{s.icon}</span>
+                  <p style={{ fontSize: '0.8rem', lineHeight: '1.5', color: 'var(--text-primary)' }}>{s.text}</p>
+                </div>
               ))}
-            </ul>
-          </div>
-        </div>
-
-        {/* SECTION: WEIGHT TRACKING + CHART (COMBINED) */}
-        <div className="glass-panel">
-          {/* 🔹 HEADER */}
-          <h3 style={{ marginBottom: "16px" }}>Weight Tracking</h3>
-
-          {/* 🔹 INPUT ROW */}
-          <div
-            style={{
-              display: "flex",
-              gap: "12px",
-              flexWrap: "wrap",
-              marginBottom: "20px",
-            }}
-          >
-            <input
-              type="number"
-              className="input"
-              placeholder="Today's Weight (kg)"
-              value={currentWeight}
-              onChange={(e) => setCurrentWeight(e.target.value)}
-              style={{ flex: 1, minWidth: "200px" }}
-            />
-            <button
-              className="btn"
-              onClick={handleSaveWeight}
-              disabled={weightLoading}
-              style={{ minWidth: "140px" }}
-            >
-              {weightLoading ? "Saving..." : "Save Weight"}
-            </button>
-          </div>
-
-          {/* 🔹 RANGE BUTTONS */}
-          <div style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
-            <button
-              className="btn"
-              onClick={() => setRange(7)}
-              style={{ background: range === 7 ? "#22c55e" : "" }}
-            >
-              7 Days
-            </button>
-            <button
-              className="btn"
-              onClick={() => setRange(15)}
-              style={{ background: range === 15 ? "#22c55e" : "" }}
-            >
-              15 Days
-            </button>
-            <button
-              className="btn"
-              onClick={() => setRange(30)}
-              style={{ background: range === 30 ? "#22c55e" : "" }}
-            >
-              30 Days
-            </button>
-          </div>
-
-          {/* 🔹 CHART */}
-          {chartLoading ? (
-            <div
-              style={{
-                height: "220px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: "rgba(255,255,255,0.05)",
-                borderRadius: "8px",
-              }}
-            >
-              <p style={{ color: "var(--text-muted)" }}>
-                Loading chart calculations...
-              </p>
             </div>
-          ) : weightLogs.length > 0 ? (
-            <>
-              <div
-                style={{
-                  position: "relative",
-                  height: "260px",
-                  width: "100%",
-                  marginBottom: "16px",
-                }}
-              >
-                <Line data={chartData} options={chartOptions} />
-              </div>
+          </div>
 
-              {/* 🔹 INSIGHT */}
-              {weightInsight && (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    color: insightColor,
-                    backgroundColor: "rgba(255,255,255,0.05)",
-                    padding: "12px",
-                    borderRadius: "8px",
-                  }}
-                >
-                  <TrendingUp size={16} />
-                  <span style={{ fontSize: "0.95em" }}>{weightInsight}</span>
-                </div>
-              )}
-            </>
-          ) : (
-            <div
-              style={{
-                height: "140px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: "rgba(255,255,255,0.05)",
-                borderRadius: "8px",
-              }}
-            >
-              <p style={{ color: "var(--text-muted)", textAlign: "center" }}>
-                No weight data available.
-                <br />
-                Start logging above!
-              </p>
-            </div>
-          )}
         </div>
+      </div>
+    </Layout>
+  );
+};
+
+const StatCard = ({ icon, label, current, target, unit = "", color, isTrend = false }) => {
+  const percent = target ? Math.min((current/target)*100, 100) : 0;
+  return (
+    <div className="glass-panel grid-span-full-mobile" style={{ gridColumn: 'span 4', padding: '20px', display: 'flex', gap: '16px', alignItems: 'center' }}>
+      <div style={{ background: `${color}15`, padding: '10px', borderRadius: '12px', color }}>{icon}</div>
+      <div style={{ flex: 1 }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
+        <h3 style={{ fontSize: '1.25rem', marginTop: '4px' }}>
+          {current}{unit} {target && <span style={{ fontSize: '0.8rem', fontWeight: 400, color: 'var(--text-muted)' }}>/ {target}{unit}</span>}
+        </h3>
+        {!isTrend && target && (
+          <div className="progress-bar-bg" style={{ marginTop: '8px', height: '4px' }}>
+            <div className="progress-bar-fill" style={{ width: `${percent}%`, backgroundColor: color }}></div>
+          </div>
+        )}
       </div>
     </div>
   );

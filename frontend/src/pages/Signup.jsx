@@ -1,23 +1,11 @@
 import React, { useState, useContext, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { User, Mail, Lock, Activity, Target, Shield, Heart } from 'lucide-react';
 
 const DISEASES = ['Diabetes', 'Heart Disease', 'Hypertension', 'Celiac Disease', 'High Cholesterol'];
 const ACTIVITY_LEVELS = ['Sedentary', 'Lightly Active', 'Moderately Active', 'Very Active'];
 const GOALS = ['Weight Loss', 'Muscle Gain', 'Maintain Weight'];
-
-// ── Defined OUTSIDE Signup so React never re-creates it on re-render ──
-// If placed inside, every keystroke causes React to unmount + remount it,
-// which kills focus on the active input.
-const FieldWrapper = ({ children, label, required, error, span }) => (
-  <div className={`form-field${span ? ' form-field--span' : ''}`}>
-    <label className="form-label">
-      {label}{required && <span className="required-star"> *</span>}
-    </label>
-    {children}
-    {error && <p className="field-error">{error}</p>}
-  </div>
-);
 
 const Signup = () => {
   const { signup } = useContext(AuthContext);
@@ -32,56 +20,27 @@ const Signup = () => {
 
   const [errors, setErrors] = useState({});
   const [globalError, setGlobalError] = useState('');
-  const [diseasesOpen, setDiseasesOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const diseasesRef = useRef(null);
-
-  // Close diseases dropdown when clicking outside
-  useEffect(() => {
-    const handler = (e) => {
-      if (diseasesRef.current && !diseasesRef.current.contains(e.target)) {
-        setDiseasesOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
-  };
-
-  const handleDiseaseToggle = (disease) => {
-    setForm(prev => ({
-      ...prev,
-      diseases: prev.diseases.includes(disease)
-        ? prev.diseases.filter(d => d !== disease)
-        : [...prev.diseases, disease],
-    }));
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
   const validate = () => {
     const e = {};
-    if (!form.name.trim())       e.name = 'Full name is required';
-    if (!form.email.trim())      e.email = 'Email is required';
-    if (!form.password)          e.password = 'Password is required';
-    if (!form.age)               e.age = 'Age is required';
-    if (!form.gender)            e.gender = 'Please select a gender';
-    if (!form.height)            e.height = 'Height is required';
-    if (!form.weight)            e.weight = 'Weight is required';
-    if (!form.activityLevel)     e.activityLevel = 'Please select an activity level';
-    if (!form.goal)              e.goal = 'Please select a goal';
+    if (!form.name.trim()) e.name = 'Required';
+    if (!form.email.trim()) e.email = 'Required';
+    if (!form.password) e.password = 'Required';
+    if (!form.age) e.age = 'Required';
+    if (!form.gender) e.gender = 'Required';
+    if (!form.height) e.height = 'Required';
+    if (!form.weight) e.weight = 'Required';
+    if (!form.activityLevel) e.activityLevel = 'Required';
+    if (!form.goal) e.goal = 'Required';
     return e;
   };
-
-  const isFormValid =
-    form.name.trim() && form.email.trim() && form.password &&
-    form.age && form.gender && form.height && form.weight &&
-    form.activityLevel && form.goal;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -90,9 +49,6 @@ const Signup = () => {
 
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      const firstKey = Object.keys(validationErrors)[0];
-      const el = formRef.current?.querySelector(`[name="${firstKey}"]`);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 
@@ -108,233 +64,128 @@ const Signup = () => {
     }
   };
 
-  const inputClass = (name) =>
-    `input${errors[name] ? ' input--error' : ''}`;
-
-  const selectClass = (name) =>
-    `select${errors[name] ? ' input--error' : ''}${!form[name] ? ' select--placeholder' : ''}`;
-
   return (
-    <div className="signup-page">
-      <div className="auth-container glass-panel signup-panel">
-        {/* Header */}
-        <div className="signup-header">
-          <div className="signup-icon">🥗</div>
-          <h2>Create Your Account</h2>
-          <p className="signup-subtitle">Start your personalized diet journey</p>
+    <div className="auth-wrapper fade-in" style={{ padding: '40px 16px' }}>
+      <div className="glass-panel auth-card" style={{ maxWidth: '500px', padding: '40px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <div style={{ 
+            width: '64px', height: '64px', background: 'rgba(34, 197, 94, 0.1)', 
+            borderRadius: '16px', display: 'flex', alignItems: 'center', 
+            justifyContent: 'center', margin: '0 auto 16px', color: 'var(--accent-neon)' 
+          }}>
+            <Heart size={32} />
+          </div>
+          <h2 className="gradient-text">Create Account</h2>
+          <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>Join the AI Diet Coach community</p>
         </div>
 
         {globalError && (
-          <div className="warning-box" role="alert">
-            <span>⚠️</span> {globalError}
+          <div className="glass-card" style={{ marginBottom: '24px', borderColor: 'var(--danger)', color: 'var(--danger)' }}>
+            {globalError}
           </div>
         )}
 
-        <form ref={formRef} onSubmit={handleSubmit} noValidate>
-          <div className="form-grid">
-            {/* Full Name */}
-            <FieldWrapper label="Full Name" required error={errors.name}>
-              <input
-                className={inputClass('name')}
-                name="name"
-                type="text"
-                placeholder="Enter your full name"
-                value={form.name}
-                onChange={handleChange}
-                autoComplete="name"
-              />
-            </FieldWrapper>
+        <form onSubmit={handleSubmit}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+            <div className="input-group" style={{ gridColumn: 'span 2', marginBottom: '0' }}>
+              <label className="label">Full Name</label>
+              <div style={{ position: 'relative' }}>
+                <User style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} size={16} />
+                <input className="input" style={{ paddingLeft: '40px' }} name="name" placeholder="John Doe" value={form.name} onChange={handleChange} required />
+              </div>
+            </div>
 
-            {/* Email */}
-            <FieldWrapper label="Email Address" required error={errors.email}>
-              <input
-                className={inputClass('email')}
-                name="email"
-                type="email"
-                placeholder="you@example.com"
-                value={form.email}
-                onChange={handleChange}
-                autoComplete="email"
-              />
-            </FieldWrapper>
+            <div className="input-group" style={{ gridColumn: 'span 2', marginBottom: '0' }}>
+              <label className="label">Email Address</label>
+              <div style={{ position: 'relative' }}>
+                <Mail style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} size={16} />
+                <input className="input" style={{ paddingLeft: '40px' }} name="email" type="email" placeholder="john@example.com" value={form.email} onChange={handleChange} required />
+              </div>
+            </div>
 
-            {/* Password */}
-            <FieldWrapper label="Password" required error={errors.password}>
-              <input
-                className={inputClass('password')}
-                name="password"
-                type="password"
-                placeholder="Create a strong password"
-                value={form.password}
-                onChange={handleChange}
-                autoComplete="new-password"
-              />
-            </FieldWrapper>
+            <div className="input-group" style={{ gridColumn: 'span 2', marginBottom: '0' }}>
+              <label className="label">Password</label>
+              <div style={{ position: 'relative' }}>
+                <Lock style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} size={16} />
+                <input className="input" style={{ paddingLeft: '40px' }} name="password" type="password" placeholder="••••••••" value={form.password} onChange={handleChange} required />
+              </div>
+            </div>
 
-            {/* Age */}
-            <FieldWrapper label="Age" required error={errors.age}>
-              <input
-                className={inputClass('age')}
-                name="age"
-                type="number"
-                placeholder="Your age in years"
-                value={form.age}
-                onChange={handleChange}
-                min="10"
-                max="120"
-              />
-            </FieldWrapper>
+            <div className="input-group" style={{ marginBottom: '0' }}>
+              <label className="label">Age</label>
+              <input className="input" name="age" type="number" placeholder="25" value={form.age} onChange={handleChange} required />
+            </div>
 
-            {/* Gender */}
-            <FieldWrapper label="Gender" required error={errors.gender}>
-              <select
-                className={selectClass('gender')}
-                name="gender"
-                value={form.gender}
-                onChange={handleChange}
-              >
-                <option value="" disabled>Select Gender</option>
+            <div className="input-group" style={{ marginBottom: '0' }}>
+              <label className="label">Gender</label>
+              <select className="select" name="gender" value={form.gender} onChange={handleChange} required>
+                <option value="">Select</option>
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
                 <option value="Other">Other</option>
               </select>
-            </FieldWrapper>
+            </div>
 
-            {/* Height */}
-            <FieldWrapper label="Height (cm)" required error={errors.height}>
-              <input
-                className={inputClass('height')}
-                name="height"
-                type="number"
-                placeholder="e.g. 170"
-                value={form.height}
-                onChange={handleChange}
-                min="50"
-                max="300"
-              />
-            </FieldWrapper>
+            <div className="input-group" style={{ marginBottom: '0' }}>
+              <label className="label">Weight (kg)</label>
+              <input className="input" name="weight" type="number" placeholder="70" value={form.weight} onChange={handleChange} required />
+            </div>
 
-            {/* Weight */}
-            <FieldWrapper label="Weight (kg)" required error={errors.weight}>
-              <input
-                className={inputClass('weight')}
-                name="weight"
-                type="number"
-                placeholder="e.g. 65"
-                value={form.weight}
-                onChange={handleChange}
-                min="10"
-                max="500"
-              />
-            </FieldWrapper>
+            <div className="input-group" style={{ marginBottom: '0' }}>
+              <label className="label">Height (cm)</label>
+              <input className="input" name="height" type="number" placeholder="175" value={form.height} onChange={handleChange} required />
+            </div>
 
-            {/* Activity Level */}
-            <FieldWrapper label="Activity Level" required error={errors.activityLevel}>
-              <select
-                className={selectClass('activityLevel')}
-                name="activityLevel"
-                value={form.activityLevel}
-                onChange={handleChange}
-              >
-                <option value="" disabled>Select Activity Level</option>
-                {ACTIVITY_LEVELS.map(level => (
-                  <option key={level} value={level}>{level}</option>
-                ))}
+            <div className="input-group" style={{ gridColumn: 'span 2', marginBottom: '0' }}>
+              <label className="label">Activity Level</label>
+              <select className="select" name="activityLevel" value={form.activityLevel} onChange={handleChange} required>
+                <option value="">Select Level</option>
+                {ACTIVITY_LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
               </select>
-            </FieldWrapper>
+            </div>
 
-            {/* Goal */}
-            <FieldWrapper label="Your Goal" required error={errors.goal} span>
-              <select
-                className={selectClass('goal')}
-                name="goal"
-                value={form.goal}
-                onChange={handleChange}
-              >
-                <option value="" disabled>Select Your Goal</option>
-                {GOALS.map(g => (
-                  <option key={g} value={g}>{g}</option>
-                ))}
+            <div className="input-group" style={{ gridColumn: 'span 2', marginBottom: '0' }}>
+              <label className="label">Health Goal</label>
+              <select className="select" name="goal" value={form.goal} onChange={handleChange} required>
+                <option value="">Select Goal</option>
+                {GOALS.map(g => <option key={g} value={g}>{g}</option>)}
               </select>
-            </FieldWrapper>
-
-            {/* Health Conditions Dropdown */}
-            <div className="form-field form-field--span" ref={diseasesRef}>
-              <label className="form-label">Health Conditions <span className="optional-tag">(Optional)</span></label>
-              <div className="diseases-dropdown">
-                <button
-                  type="button"
-                  className="diseases-trigger"
-                  onClick={() => setDiseasesOpen(prev => !prev)}
-                  aria-expanded={diseasesOpen}
-                >
-                  <span className="diseases-trigger-text">
-                    {form.diseases.length === 0
-                      ? 'Select Health Conditions'
-                      : form.diseases.join(', ')}
-                  </span>
-                  <span className={`diseases-arrow ${diseasesOpen ? 'open' : ''}`}>▾</span>
-                </button>
-
-                {diseasesOpen && (
-                  <div className="diseases-list" role="listbox" aria-multiselectable="true">
-                    {DISEASES.map(disease => {
-                      const checked = form.diseases.includes(disease);
-                      return (
-                        <label
-                          key={disease}
-                          className={`diseases-option${checked ? ' checked' : ''}`}
-                          role="option"
-                          aria-selected={checked}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => handleDiseaseToggle(disease)}
-                            className="diseases-checkbox"
-                          />
-                          <span className="diseases-checkmark">{checked ? '☑' : '☐'}</span>
-                          {disease}
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-              {form.diseases.length > 0 && (
-                <div className="diseases-tags">
-                  {form.diseases.map(d => (
-                    <span key={d} className="disease-tag">
-                      {d}
-                      <button
-                        type="button"
-                        className="disease-tag-remove"
-                        onClick={() => handleDiseaseToggle(d)}
-                        aria-label={`Remove ${d}`}
-                      >×</button>
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
 
-          {/* Submit */}
-          <button
-            className="btn btn-signup"
-            type="submit"
-            disabled={!isFormValid || isSubmitting}
-          >
-            {isSubmitting ? (
-              <><span className="spinner"></span> Creating Account…</>
-            ) : (
-              '🚀 Create Account'
-            )}
+          <div style={{ marginBottom: '24px' }}>
+            <label className="label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Shield size={14} /> Health Conditions (Optional)
+            </label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
+              {DISEASES.map(d => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setForm(prev => ({
+                    ...prev,
+                    diseases: prev.diseases.includes(d) ? prev.diseases.filter(item => item !== d) : [...prev.diseases, d]
+                  }))}
+                  style={{
+                    padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--glass-border)',
+                    background: form.diseases.includes(d) ? 'rgba(34, 197, 94, 0.1)' : 'var(--glass-highlight)',
+                    color: form.diseases.includes(d) ? 'var(--accent-neon)' : 'var(--text-secondary)',
+                    fontSize: '0.75rem', cursor: 'pointer', transition: 'var(--transition-smooth)'
+                  }}
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button className="btn btn-primary" type="submit" disabled={isSubmitting} style={{ width: '100%' }}>
+            {isSubmitting ? 'Creating Account...' : 'Sign Up'}
           </button>
         </form>
 
-        <p className="signup-footer">
-          Already have an account? <Link to="/login">Sign In</Link>
+        <p style={{ marginTop: '24px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+          Already have an account? <Link to="/login" style={{ color: 'var(--accent-neon)', fontWeight: 600 }}>Log In</Link>
         </p>
       </div>
     </div>

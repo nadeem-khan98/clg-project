@@ -5,7 +5,8 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
-import Navbar from './components/Navbar';
+import DietPlan from './pages/DietPlan';
+import Scan from './pages/Scan';
 
 const PrivateRoute = ({ children }) => {
   const { user } = useContext(AuthContext);
@@ -15,7 +16,6 @@ const PrivateRoute = ({ children }) => {
 function App() {
   return (
     <Router>
-      <Navbar />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
@@ -28,10 +28,26 @@ function App() {
           } 
         />
         <Route 
+          path="/diet-plan" 
+          element={
+            <PrivateRoute>
+              <DietPlan />
+            </PrivateRoute>
+          } 
+        />
+        <Route 
           path="/profile" 
           element={
             <PrivateRoute>
               <Profile />
+            </PrivateRoute>
+          } 
+        />
+        <Route 
+          path="/scan" 
+          element={
+            <PrivateRoute>
+              <Scan />
             </PrivateRoute>
           } 
         />
