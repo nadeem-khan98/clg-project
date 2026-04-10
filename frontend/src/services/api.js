@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_URL || "https://clg-project-cpvk.onrender.com";
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: API_URL,
 });
 
 api.interceptors.request.use(
@@ -12,9 +14,7 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 api.interceptors.response.use(
