@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: "https://clg-project-cpvk.onrender.com", // 🔥 HARD FIX
+  baseURL: "https://clg-project-cpvk.onrender.com/api", // ✅ ADD /api
 });
 
 api.interceptors.request.use(

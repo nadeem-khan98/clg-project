@@ -15,10 +15,7 @@ const PORT = process.env.PORT || 5000;
 
 // ✅ FIXED CORS
 app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "https://clg-project-liart.vercel.app"
-  ],
+  origin: true, // 🔥 allow all Vercel URLs
   credentials: true
 }));
 
