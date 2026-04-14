@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import DietPlan from './pages/DietPlan';
 import Scan from './pages/Scan';
+import ThemeToggle from './components/ThemeToggle';
 
 const PrivateRoute = ({ children }) => {
   const { user } = useContext(AuthContext);
@@ -16,6 +17,7 @@ const PrivateRoute = ({ children }) => {
 function App() {
   return (
     <Router>
+      <ThemeToggle />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
