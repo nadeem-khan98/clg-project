@@ -291,6 +291,30 @@ h6 {
   }
 }
 
+@media (max-width: 640px) {
+  .weight-entry-card {
+    width: 100% !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+  
+  .weight-entry-card > div:nth-child(2) {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .weight-entry-card input {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .weight-entry-card button.btn-primary {
+    width: 100%;
+    height: 40px !important;
+  }
+}
+
 /* Auth Pages */
 .auth-wrapper {
   display: flex;

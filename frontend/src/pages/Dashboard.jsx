@@ -21,6 +21,9 @@ import {
   Egg,
   Coffee,
   Apple,
+  Scale,
+  Plus as PlusIcon,
+  Minus as MinusIcon,
 } from "lucide-react";
 import {
   XAxis,
@@ -548,6 +551,9 @@ const Dashboard = () => {
   const [nutrition, setNutrition] = useState(null);
   const [range, setRange] = useState(15);
   const [loading, setLoading] = useState(true);
+  const [inputWeight, setInputWeight] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     if (authUser) fetchAllData();
@@ -569,6 +575,31 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleWeightUpdate = async (e) => {
+    if (e) e.preventDefault();
+    if (!inputWeight || isNaN(inputWeight)) return;
+    
+    setIsUpdating(true);
+    try {
+      await api.post("/weight", { weight: Number(inputWeight) });
+      setToast("Weight updated successfully!");
+      setInputWeight("");
+      await fetchAllData();
+      setTimeout(() => setToast(null), 3000);
+    } catch (err) {
+      console.error(err);
+      setToast("Failed to update weight.");
+      setTimeout(() => setToast(null), 3000);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const adjustWeight = (delta) => {
+    const current = Number(inputWeight) || latestWeight;
+    setInputWeight((current + delta).toFixed(1));
   };
 
   /* ── Compute nutrition targets ── */
@@ -621,9 +652,31 @@ const Dashboard = () => {
   /* ── Weight tracking ── */
   const latestWeight =
     weightLogs.length > 0 ? weightLogs[weightLogs.length - 1].weight : userProfile?.weight || 0;
+  const prevWeightVal =
+    weightLogs.length > 1 ? weightLogs[weightLogs.length - 2].weight : null;
+
   const startWeight =
     weightLogs.length > 0 ? weightLogs[0].weight : userProfile?.weight || 0;
   const isMaintain = userProfile?.goal === "Maintain Weight";
+
+  // trend logic
+  const weightTrend = prevWeightVal !== null ? latestWeight - prevWeightVal : 0;
+
+  // Last updated check
+  let lastUpdatedText = "Never";
+  if (weightLogs.length > 0) {
+    const lastDate = new Date(weightLogs[weightLogs.length - 1].date);
+    const now = new Date();
+    const isToday = lastDate.toDateString() === now.toDateString();
+    
+    const yesterday = new Date();
+    yesterday.setDate(now.getDate() - 1);
+    const isYesterday = lastDate.toDateString() === yesterday.toDateString();
+
+    if (isToday) lastUpdatedText = "Today";
+    else if (isYesterday) lastUpdatedText = "Yesterday";
+    else lastUpdatedText = lastDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
 
   let targetWeight = latestWeight;
   if (userProfile?.goal === "Weight Loss") targetWeight = startWeight - 5;
@@ -678,6 +731,30 @@ const Dashboard = () => {
   return (
     <Layout>
       <div className="fade-in">
+        {/* ── Toast Notification ── */}
+        {toast && (
+          <div 
+            style={{ 
+              position: 'fixed', 
+              top: '24px', 
+              left: '50%', 
+              transform: 'translateX(-50%)', 
+              zIndex: 10000,
+              background: 'var(--secondary-blue)',
+              color: 'white',
+              padding: '12px 24px',
+              borderRadius: '12px',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              animation: 'fadeIn 0.3s ease-out'
+            }}
+          >
+            <CheckCircle2 size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+            {toast}
+          </div>
+        )}
+
         {/* ── Header ── */}
         <header
           style={{
@@ -696,36 +773,95 @@ const Dashboard = () => {
             </p>
           </div>
 
-          <div
-            className="glass-card"
-            style={{ padding: "8px 16px", display: "flex", gap: "16px", alignItems: "center" }}
-          >
-            <div style={{ textAlign: "right" }}>
-              <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Current</p>
-              <p style={{ fontWeight: 700, fontSize: "1.1rem" }}>{latestWeight}kg</p>
-            </div>
-            <div style={{ width: "1px", background: "var(--glass-border)", height: "24px" }} />
-            <div style={{ textAlign: "right" }}>
-              <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Target</p>
-              <p style={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--accent-neon)" }}>
-                {isMaintain ? latestWeight : targetWeight}kg
-              </p>
-            </div>
-            <div style={{ width: "1px", background: "var(--glass-border)", height: "24px" }} />
-            <div style={{ textAlign: "right" }}>
-              <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Status</p>
-              <div
+          <div style={{ display: "flex", gap: "12px", alignItems: "flex-end", flexWrap: "wrap" }}>
+            {/* ── Quick Weight Entry ── */}
+            <div
+              className="glass-card weight-entry-card"
+              style={{ padding: "8px 12px", display: "flex", alignItems: "center", gap: "8px" }}
+            >
+              <div style={{ color: "var(--text-muted)", display: "flex", alignItems: "center" }}>
+                <Scale size={16} />
+              </div>
+              <div style={{ display: "flex", gap: "4px" }}>
+                <button 
+                  onClick={() => adjustWeight(-0.5)}
+                  className="btn-ghost" 
+                  style={{ padding: "4px", borderRadius: "6px", border: "none" }}
+                  title="-0.5kg"
+                >
+                  <MinusIcon size={12} />
+                </button>
+                <input
+                  type="number"
+                  placeholder={latestWeight + " kg"}
+                  value={inputWeight}
+                  onChange={(e) => setInputWeight(e.target.value)}
+                  style={{
+                    width: "70px",
+                    background: "transparent",
+                    border: "none",
+                    borderBottom: "1px solid var(--glass-border)",
+                    textAlign: "center",
+                    fontSize: "0.9rem",
+                    fontWeight: 600,
+                    color: "var(--text-primary)",
+                    padding: "2px 0",
+                  }}
+                />
+                <button 
+                  onClick={() => adjustWeight(0.5)}
+                  className="btn-ghost" 
+                  style={{ padding: "4px", borderRadius: "6px", border: "none" }}
+                  title="+0.5kg"
+                >
+                  <PlusIcon size={12} />
+                </button>
+              </div>
+              <button
+                onClick={handleWeightUpdate}
+                disabled={isUpdating || !inputWeight}
+                className="btn btn-primary"
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  color: isOnTrack ? "var(--accent-neon)" : "var(--danger)",
+                  padding: "6px 12px",
+                  fontSize: "0.75rem",
+                  borderRadius: "8px",
+                  height: "32px",
                 }}
               >
-                {isOnTrack ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
-                <span style={{ fontWeight: 700, fontSize: "0.9rem" }}>
-                  {isOnTrack ? "On Track" : "Off Track"}
-                </span>
+                {isUpdating ? "..." : "Update"}
+              </button>
+            </div>
+
+            {/* ── Weight Status Card ── */}
+            <div
+              className="glass-card"
+              style={{ padding: "8px 16px", display: "flex", gap: "16px", alignItems: "center" }}
+            >
+              <div style={{ textAlign: "right" }}>
+                <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase" }}>
+                  Current {weightTrend !== 0 && (
+                    <span style={{ color: weightTrend > 0 ? "var(--danger)" : "var(--accent-neon)", fontWeight: 800 }}>
+                      {weightTrend > 0 ? "↑" : "↓"}
+                    </span>
+                  )}
+                </p>
+                <p style={{ fontWeight: 700, fontSize: "1.1rem" }}>{latestWeight}kg</p>
+              </div>
+              <div style={{ width: "1px", background: "var(--glass-border)", height: "24px" }} />
+              <div style={{ textAlign: "right" }}>
+                <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Target</p>
+                <p style={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--accent-neon)" }}>
+                  {isMaintain ? latestWeight : targetWeight}kg
+                </p>
+              </div>
+              <div style={{ width: "1px", background: "var(--glass-border)", height: "24px" }} />
+              <div style={{ textAlign: "right" }}>
+                <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase" }}>
+                  Updated
+                </p>
+                <p style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--text-secondary)" }}>
+                  {lastUpdatedText}
+                </p>
               </div>
             </div>
           </div>
