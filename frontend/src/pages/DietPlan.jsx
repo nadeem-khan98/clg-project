@@ -8,7 +8,6 @@ import {
   Utensils, 
   Info, 
   Edit2, 
-  Clock, 
   AlertTriangle,
   X,
   Save
@@ -100,13 +99,7 @@ const DietPlan = () => {
     { totalCalories: 0, totalFat: 0, totalProtein: 0, totalSugar: 0 }
   );
 
-  const getMealType = (dateString) => {
-    const hour = new Date(dateString).getHours();
-    if (hour >= 6 && hour < 11) return "Breakfast";
-    if (hour >= 11 && hour < 15) return "Lunch";
-    if (hour >= 18 && hour < 22) return "Dinner";
-    return "Snack";
-  };
+
 
   if (loading) return <Layout><div className="fade-in">Loading diet plan...</div></Layout>;
 
@@ -130,7 +123,7 @@ const DietPlan = () => {
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {intakes.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
                   <Info size={40} style={{ marginBottom: '12px', opacity: 0.5 }} />
@@ -143,7 +136,6 @@ const DietPlan = () => {
                     intake={intake} 
                     onDelete={handleDelete} 
                     onEdit={handleEditInit}
-                    mealType={getMealType(intake.createdAt)}
                   />
                 ))
               )}
@@ -193,54 +185,61 @@ const DietPlan = () => {
   );
 };
 
-const IntakeCard = ({ intake, onDelete, onEdit, mealType }) => {
-  const time = new Date(intake.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+const IntakeCard = ({ intake, onDelete, onEdit }) => {
   const isHighSugar = intake.sugar > 10;
   const isHighFat = intake.fat > 15;
 
   return (
-    <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}>
+    <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {/* Top row: name + actions */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: '4px', background: 'var(--glass-highlight)', color: 'var(--accent-neon)', textTransform: 'uppercase' }}>
-              {mealType}
-            </span>
-            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '3px' }}>
-              <Clock size={10} /> {time}
-            </span>
-          </div>
-          <h4 style={{ color: 'var(--text-primary)', fontSize: '1rem', fontWeight: 600 }}>{intake.productName}</h4>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-            {intake.grams}g • {intake.calories} kcal • Protein: {intake.protein}g
+        <div style={{ flex: 1 }}>
+          <h4 style={{ color: 'var(--text-primary)', fontSize: '1rem', fontWeight: 600, marginBottom: '4px' }}>
+            {intake.productName}
+          </h4>
+          {/* Nutrition summary line */}
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+            {intake.grams}g &nbsp;•&nbsp; {intake.calories} kcal &nbsp;•&nbsp; {intake.protein}g protein
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={() => onEdit(intake)} className="btn btn-ghost" style={{ padding: '8px' }}>
-            <Edit2 size={16} />
+        
+        <div style={{ display: 'flex', gap: '4px', marginLeft: '12px' }}>
+          <button onClick={() => onEdit(intake)} className="btn-ghost" style={{ padding: '6px', borderRadius: '8px', border: 'none', background: 'transparent', cursor: 'pointer' }}>
+            <Edit2 size={16} style={{ color: 'var(--text-muted)' }} />
           </button>
-          <button onClick={() => onDelete(intake._id)} className="btn btn-ghost" style={{ padding: '8px', color: 'var(--danger)' }}>
+          <button onClick={() => onDelete(intake._id)} className="btn-ghost" style={{ padding: '6px', borderRadius: '8px', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--danger)' }}>
             <Trash2 size={16} />
           </button>
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: '8px', borderTop: '1px solid var(--glass-border)', paddingTop: '10px' }}>
-        <div style={{ display: 'flex', gap: '12px', fontSize: '0.8rem' }}>
-          <span title="Protein">🥩 {intake.protein}g</span>
-          <span title="Fat">🧈 {intake.fat}g</span>
-          <span title="Sugar">🍬 {intake.sugar}g</span>
+      {/* Macro row + warnings */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid var(--glass-border)' }}>
+        <div style={{ display: 'flex', gap: '16px', fontSize: '0.8rem', fontWeight: 500 }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent-neon)' }}>
+            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'currentColor' }} />
+            Protein: {intake.protein}g
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#a855f7' }}>
+            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'currentColor' }} />
+            Fat: {intake.fat}g
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#f59e0b' }}>
+            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'currentColor' }} />
+            Sugar: {intake.sugar}g
+          </span>
         </div>
+
         <div style={{ display: 'flex', gap: '8px' }}>
           {isHighSugar && (
-            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: 'var(--warning)', fontWeight: 600 }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: 'var(--warning)', fontWeight: 600, background: 'rgba(245, 158, 11, 0.1)', padding: '2px 8px', borderRadius: '12px' }}>
               <AlertTriangle size={12} /> High Sugar
             </span>
           )}
           {isHighFat && (
-             <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: 'var(--warning)', fontWeight: 600 }}>
-                <AlertTriangle size={12} /> High Fat
-             </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: 'var(--warning)', fontWeight: 600, background: 'rgba(245, 158, 11, 0.1)', padding: '2px 8px', borderRadius: '12px' }}>
+              <AlertTriangle size={12} /> High Fat
+            </span>
           )}
         </div>
       </div>

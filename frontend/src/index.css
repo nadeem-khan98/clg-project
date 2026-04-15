@@ -260,10 +260,34 @@ h6 {
 
   .grid-mobile-1 {
     grid-template-columns: 1fr !important;
+    gap: 12px !important;
   }
 
   .grid-span-full-mobile {
     grid-column: span 1 !important;
+  }
+
+  .main-content {
+    padding: 16px 12px 110px;
+  }
+}
+
+/* SaaS aesthetic refinements */
+.glass-panel, .glass-card {
+  border-width: 1px;
+}
+
+.dashboard-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 }
 
