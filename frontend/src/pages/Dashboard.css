@@ -30,7 +30,7 @@
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .stats-grid {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -53,6 +53,12 @@
   }
 }
 
+@media (max-width: 768px) {
+  .dashboard-main-grid {
+    gap: 16px;
+  }
+}
+
 /* Column Container for vertical stacking inside grid columns */
 .dashboard-column {
   display: flex;
@@ -60,7 +66,7 @@
   gap: 24px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .dashboard-column {
     gap: 16px;
   }
@@ -73,11 +79,34 @@
   height: auto;
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .dashboard-card {
     padding: 20px;
+  }
+}
+
+/* Weight Entry & Status Cards */
+.weight-entry-card, .weight-status-card {
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.weight-status-card {
+  padding: 8px 16px;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .weight-entry-card, .weight-status-card {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    padding: 16px;
   }
 }
 
@@ -101,7 +130,16 @@
   margin: 0;
 }
 
-/* Helper Class for Grid Consistency */
-.grid-mobile-1 {
-  /* This is just a marker for components that handle their own sub-grid on mobile */
+/* Meal Suggestions Grid */
+.meal-suggestions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .meal-suggestions-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 }

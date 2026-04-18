@@ -96,7 +96,7 @@ const Profile = () => {
           </div>
         )}
 
-        <div className="glass-panel" style={{ padding: '32px' }}>
+        <div className="glass-panel profile-panel">
 
           {/* Header Section */}
           <div style={{
@@ -148,7 +148,7 @@ const Profile = () => {
           </div>
 
           {!isEditing ? (
-            <div className="grid-mobile-1" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '24px' }}>
+            <div className="profile-metrics-grid">
 
               {/* Biometrics Section */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -189,7 +189,7 @@ const Profile = () => {
               </div>
 
               {/* Additional Account Actions (Desktop) */}
-              <div className="grid-span-full-mobile" style={{ gridColumn: 'span 2', marginTop: '12px' }}>
+              <div className="grid-span-full" style={{ marginTop: '12px' }}>
                 <button className="glass-card" style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.01)', cursor: 'default' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <Shield size={18} className="text-secondary-blue" />
@@ -208,7 +208,7 @@ const Profile = () => {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="fade-in">
-              <div className="grid-mobile-1" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '32px' }}>
+              <div className="profile-form-grid">
                 <InputGroup label="Full Name" name="name" value={formData.name} onChange={handleChange} required />
                 <InputGroup label="Email Address" name="email" type="email" value={formData.email} onChange={handleChange} required />
                 <InputGroup label="Age" name="age" type="number" value={formData.age} onChange={handleChange} required />

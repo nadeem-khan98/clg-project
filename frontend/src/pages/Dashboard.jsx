@@ -766,10 +766,7 @@ const Dashboard = () => {
 
           <div style={{ display: "flex", gap: "12px", alignItems: "flex-end", flexWrap: "wrap" }}>
             {/* Quick Weight Entry */}
-            <div
-              className="glass-card weight-entry-card"
-              style={{ padding: "8px 12px", display: "flex", alignItems: "center", gap: "8px" }}
-            >
+            <div className="glass-card weight-entry-card">
               <div style={{ color: "var(--text-muted)", display: "flex", alignItems: "center" }}>
                 <Scale size={16} />
               </div>
@@ -824,10 +821,7 @@ const Dashboard = () => {
             </div>
 
             {/* Weight Status */}
-            <div
-              className="glass-card"
-              style={{ padding: "8px 16px", display: "flex", gap: "16px", alignItems: "center" }}
-            >
+            <div className="glass-card weight-status-card">
               <div style={{ textAlign: "right" }}>
                 <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase" }}>
                   Current {weightTrend !== 0 && (
@@ -972,7 +966,7 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }} className="grid-mobile-1">
+              <div className="meal-suggestions-grid">
                 {mealSuggestions.map((s, i) => (
                   <MealCard key={i} suggestion={s} index={i} />
                 ))}
