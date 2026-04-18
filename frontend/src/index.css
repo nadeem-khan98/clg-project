@@ -257,14 +257,50 @@ h6 {
   .main-content {
     padding: 16px 12px 110px;
   }
+}
+/* Profile & Diet Layouts */
+.profile-metrics-grid,
+.profile-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
 
+.diet-container-grid {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 24px;
+  align-items: start;
+}
+
+.grid-span-full {
+  grid-column: span 2;
+}
+
+@media (max-width: 768px) {
   .grid-mobile-1 {
-    grid-template-columns: 1fr !important;
-    gap: 12px !important;
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 
   .main-content {
     padding: 16px 12px 110px;
+  }
+
+  /* Specific Section Stacking */
+  .profile-metrics-grid,
+  .profile-form-grid,
+  .diet-container-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .grid-span-full {
+    grid-column: span 1;
+  }
+
+  .profile-panel {
+    padding: 20px !important;
   }
 }
 
@@ -273,12 +309,11 @@ h6 {
   border-width: 1px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .weight-entry-card {
-    width: 100% !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: 12px !important;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
   }
   
   .weight-entry-card > div:nth-child(2) {
@@ -287,13 +322,14 @@ h6 {
   }
 
   .weight-entry-card input {
-    width: 100% !important;
-    max-width: none !important;
+    width: 100%;
+    max-width: none;
+    flex: 1;
   }
 
   .weight-entry-card button.btn-primary {
     width: 100%;
-    height: 40px !important;
+    height: 40px;
   }
 }
 
@@ -423,8 +459,8 @@ h6 {
 
 @media (max-width: 768px) {
   .fab {
-    bottom: 96px;
-    /* Above bottom nav */
+    bottom: 90px;
+    /* Safe clearance above bottom nav */
   }
 }
 
