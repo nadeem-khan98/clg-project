@@ -35,6 +35,7 @@ import {
   Area,
 } from "recharts";
 import Layout from "../components/Layout";
+import "./Dashboard.css";
 
 /* ─────────────────────────────────────────────
    HELPERS
@@ -510,16 +511,15 @@ const StatCard = ({ icon, label, current, target, unit = "", color, isTrend = fa
     zone === "danger" ? "#ef4444" : zone === "warning" ? "#f59e0b" : color;
 
   return (
-    <div
-      className="glass-panel grid-span-full-mobile"
-      style={{ gridColumn: "span 4", padding: "20px", display: "flex", gap: "16px", alignItems: "center" }}
-    >
-      <div style={{ background: `${color}15`, padding: "10px", borderRadius: "12px", color }}>{icon}</div>
+    <div className="glass-panel dashboard-card" style={{ flexDirection: "row", gap: "16px", alignItems: "center" }}>
+      <div style={{ background: `${color}15`, padding: "10px", borderRadius: "12px", color, flexShrink: 0 }}>
+        {icon}
+      </div>
       <div style={{ flex: 1 }}>
         <p style={{ color: "var(--text-secondary)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
           {label}
         </p>
-        <h3 style={{ fontSize: "1.25rem", marginTop: "4px" }}>
+        <h3 style={{ fontSize: "1.25rem", marginTop: "4px", marginBottom: 0 }}>
           {current}{unit}{" "}
           {target && (
             <span style={{ fontSize: "0.8rem", fontWeight: 400, color: "var(--text-muted)" }}>
@@ -756,25 +756,16 @@ const Dashboard = () => {
         )}
 
         {/* ── Header ── */}
-        <header
-          style={{
-            marginBottom: "24px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-end",
-            flexWrap: "wrap",
-            gap: "12px",
-          }}
-        >
+        <header className="dashboard-header">
           <div>
             <h1 className="gradient-text">Dashboard</h1>
             <p style={{ color: "var(--text-secondary)" }}>
-              Welcome back, {userProfile?.name}. Here's your status.
+              Welcome back, {userProfile?.name}. Here's your health status overview.
             </p>
           </div>
 
           <div style={{ display: "flex", gap: "12px", alignItems: "flex-end", flexWrap: "wrap" }}>
-            {/* ── Quick Weight Entry ── */}
+            {/* Quick Weight Entry */}
             <div
               className="glass-card weight-entry-card"
               style={{ padding: "8px 12px", display: "flex", alignItems: "center", gap: "8px" }}
@@ -832,7 +823,7 @@ const Dashboard = () => {
               </button>
             </div>
 
-            {/* ── Weight Status Card ── */}
+            {/* Weight Status */}
             <div
               className="glass-card"
               style={{ padding: "8px 16px", display: "flex", gap: "16px", alignItems: "center" }}
@@ -856,23 +847,15 @@ const Dashboard = () => {
               </div>
               <div style={{ width: "1px", background: "var(--glass-border)", height: "24px" }} />
               <div style={{ textAlign: "right" }}>
-                <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase" }}>
-                  Updated
-                </p>
-                <p style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--text-secondary)" }}>
-                  {lastUpdatedText}
-                </p>
+                <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Updated</p>
+                <p style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--text-secondary)" }}>{lastUpdatedText}</p>
               </div>
             </div>
           </div>
         </header>
 
-        {/* ── Grid ── */}
-        <div
-          className="grid-mobile-1"
-          style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gap: "20px" }}
-        >
-          {/* Stat Cards */}
+        {/* ── Stats Grid ── */}
+        <div className="stats-grid">
           <StatCard
             icon={<Zap size={22} />}
             label="Daily Energy"
@@ -896,228 +879,80 @@ const Dashboard = () => {
             unit="g"
             color="#a855f7"
           />
-
-        {/* ── Chart & Insights Row ── */}
-        <div className="dashboard-row grid-span-full-mobile" style={{ gridColumn: "span 12", marginBottom: "20px" }}>
-          {/* Weight Chart */}
-          <div
-            className="glass-panel"
-            style={{ padding: "24px", display: "flex", flexDirection: "column" }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}>
-              <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <TrendingUp size={20} className="text-secondary-blue" /> Weight Progress
-              </h3>
-              <div className="glass-card" style={{ padding: "4px", display: "flex", gap: "4px" }}>
-                {[7, 15, 30].map((d) => (
-                  <button
-                    key={d}
-                    onClick={() => setRange(d)}
-                    style={{
-                      padding: "4px 10px",
-                      borderRadius: "6px",
-                      border: "none",
-                      background: range === d ? "var(--secondary-blue)" : "transparent",
-                      color: range === d ? "white" : "var(--text-secondary)",
-                      fontSize: "0.7rem",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {d}D
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div style={{ width: "100%", height: "250px" }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--accent-neon)" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="var(--accent-neon)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                  <XAxis
-                    dataKey="date"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: "var(--text-muted)", fontSize: 10 }}
-                    dy={10}
-                  />
-                  <YAxis hide domain={["dataMin - 1", "dataMax + 1"]} />
-                  <Tooltip
-                    contentStyle={{
-                      background: "var(--bg-surface)",
-                      border: "1px solid var(--glass-border)",
-                      borderRadius: "12px",
-                      fontSize: "11px",
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="weight"
-                    stroke="var(--accent-neon)"
-                    strokeWidth={2}
-                    fillOpacity={1}
-                    fill="url(#colorWeight)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* ── AI INSIGHTS ── */}
-          <div
-            className="glass-panel"
-            style={{ padding: "20px", display: "flex", flexDirection: "column" }}
-          >
-            {/* Section header */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                marginBottom: "6px",
-              }}
-            >
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: "10px",
-                  background: "rgba(34,197,94,0.12)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "var(--accent-neon)",
-                }}
-              >
-                <Brain size={17} />
-              </div>
-              <h3 style={{ fontSize: "1rem" }}>AI Insights</h3>
-            </div>
-            <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginBottom: "16px" }}>
-              Health alerts, warnings &amp; progress notes
-            </p>
-
-            {/* Insight cards */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {aiInsights.map((insight, i) => (
-                <InsightCard key={i} insight={insight} index={i} />
-              ))}
-            </div>
-
-            {/* Yesterday comparison note */}
-            {hasYesterday && (
-              <div
-                style={{
-                  marginTop: "14px",
-                  padding: "8px 12px",
-                  borderRadius: "10px",
-                  background: "rgba(59,130,246,0.07)",
-                  border: "1px solid rgba(59,130,246,0.15)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                }}
-              >
-                <Clock size={12} style={{ color: "var(--secondary-blue)", flexShrink: 0 }} />
-                <p style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>
-                  Comparing with yesterday's intake data
-                </p>
-              </div>
-            )}
-          </div>
         </div>
-
-          {/* Goal Status */}
-          <div
-            className="glass-panel grid-span-full-mobile"
-            style={{
-              gridColumn: "span 4",
-              padding: "20px",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              textAlign: "center",
-            }}
-          >
-            <h3 style={{ marginBottom: "20px", fontSize: "1rem", width: "100%" }}>Goal Status</h3>
-            {isMaintain ? (
-              <div className="fade-in">
-                <div
-                  style={{
-                    width: "120px",
-                    height: "120px",
-                    borderRadius: "50%",
-                    margin: "0 auto 16px",
-                    border: `4px solid ${isOnTrack ? "var(--accent-neon)" : "var(--warning)"}`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background: "rgba(255,255,255,0.02)",
-                  }}
-                >
-                  <Target size={40} style={{ color: isOnTrack ? "var(--accent-neon)" : "var(--warning)" }} />
-                </div>
-                <h4 style={{ color: isOnTrack ? "var(--accent-neon)" : "var(--warning)", fontSize: "1.25rem" }}>
-                  {isOnTrack ? "Stable" : "Fluctuating"}
-                </h4>
-                <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "8px" }}>
-                  Weekly change: {recentDiff > 0 ? `+${recentDiff.toFixed(1)}` : recentDiff.toFixed(1)}kg
-                </p>
-              </div>
-            ) : (
-              <div style={{ position: "relative", width: "160px", height: "160px" }}>
-                <svg width="160" height="160" viewBox="0 0 160 160">
-                  <circle cx="80" cy="80" r="70" fill="transparent" stroke="rgba(255,255,255,0.05)" strokeWidth="12" />
-                  <circle
-                    cx="80"
-                    cy="80"
-                    r="70"
-                    fill="transparent"
-                    stroke="var(--accent-neon)"
-                    strokeWidth="12"
-                    strokeDasharray={440}
-                    strokeDashoffset={440 - (440 * progressPercent) / 100}
-                    strokeLinecap="round"
-                    transform="rotate(-90 80 80)"
-                    style={{ transition: "stroke-dashoffset 1s ease-out" }}
-                  />
-                </svg>
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "50%",
-                    left: "50%",
-                    transform: "translate(-50%, -50%)",
-                  }}
-                >
-                  <p style={{ fontSize: "1.5rem", fontWeight: 700 }}>{progressPercent}%</p>
-                  <p style={{ fontSize: "0.65rem", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                    Achieved
-                  </p>
+        {/* ── Main Dashboard Grid ── */}
+        <div className="dashboard-main-grid">
+          {/* Left Column (2/3) */}
+          <div className="dashboard-column">
+            {/* Weight Progress */}
+            <div className="glass-panel dashboard-card">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                <h3 style={{ display: "flex", alignItems: "center", gap: "8px", margin: 0 }}>
+                  <TrendingUp size={20} className="text-secondary-blue" /> Weight Progress
+                </h3>
+                <div className="glass-card" style={{ padding: "4px", display: "flex", gap: "4px" }}>
+                  {[7, 15, 30].map((d) => (
+                    <button
+                      key={d}
+                      onClick={() => setRange(d)}
+                      style={{
+                        padding: "4px 10px",
+                        borderRadius: "6px",
+                        border: "none",
+                        background: range === d ? "var(--secondary-blue)" : "transparent",
+                        color: range === d ? "white" : "var(--text-secondary)",
+                        fontSize: "0.7rem",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {d}D
+                    </button>
+                  ))}
                 </div>
               </div>
-            )}
-            {!isMaintain && (
-              <p style={{ marginTop: "16px", fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                Target: {targetWeight}kg
-              </p>
-            )}
-          </div>
 
-          {/* ── SMART MEAL SUGGESTIONS ── */}
-          <div
-            className="glass-panel grid-span-full-mobile"
-            style={{ gridColumn: "span 8", padding: "24px" }}
-          >
-            {/* Section header */}
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
-              <div
-                style={{
+              <div className="chart-wrapper">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--accent-neon)" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="var(--accent-neon)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                    <XAxis
+                      dataKey="date"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: "var(--text-muted)", fontSize: 10 }}
+                    />
+                    <YAxis hide domain={["dataMin - 1", "dataMax + 1"]} />
+                    <Tooltip
+                      contentStyle={{
+                        background: "var(--bg-surface)",
+                        border: "1px solid var(--glass-border)",
+                        borderRadius: "12px",
+                        fontSize: "11px",
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="weight"
+                      stroke="var(--accent-neon)"
+                      strokeWidth={2}
+                      fillOpacity={1}
+                      fill="url(#colorWeight)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Smart Meal Suggestions */}
+            <div className="glass-panel dashboard-card">
+              <div className="card-header">
+                <div style={{
                   width: 32,
                   height: 32,
                   borderRadius: "10px",
@@ -1126,23 +961,140 @@ const Dashboard = () => {
                   alignItems: "center",
                   justifyContent: "center",
                   color: "var(--secondary-blue)",
-                }}
-              >
-                <UtensilsCrossed size={17} />
+                }}>
+                  <UtensilsCrossed size={17} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: "1rem", margin: 0 }}>Smart Meal Suggestions</h3>
+                  <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "2px" }}>
+                    Personalised food recommendations based on your current intake
+                  </p>
+                </div>
               </div>
-              <h3 style={{ fontSize: "1rem" }}>Smart Meal Suggestions</h3>
-            </div>
-            <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginBottom: "18px" }}>
-              Personalised food recommendations based on your current intake
-            </p>
 
-            <div
-              style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}
-              className="grid-mobile-1"
-            >
-              {mealSuggestions.map((s, i) => (
-                <MealCard key={i} suggestion={s} index={i} />
-              ))}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }} className="grid-mobile-1">
+                {mealSuggestions.map((s, i) => (
+                  <MealCard key={i} suggestion={s} index={i} />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column (1/3) */}
+          <div className="dashboard-column">
+            {/* AI Insights */}
+            <div className="glass-panel dashboard-card">
+              <div className="card-header">
+                <div style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: "10px",
+                  background: "rgba(34,197,94,0.12)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "var(--accent-neon)",
+                }}>
+                  <Brain size={17} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: "1rem", margin: 0 }}>AI Insights</h3>
+                  <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "2px" }}>
+                    Health alerts, warnings & progress notes
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {aiInsights.map((insight, i) => (
+                  <InsightCard key={i} insight={insight} index={i} />
+                ))}
+              </div>
+
+              {hasYesterday && (
+                <div style={{
+                  marginTop: "16px",
+                  padding: "8px 12px",
+                  borderRadius: "10px",
+                  background: "rgba(59,130,246,0.07)",
+                  border: "1px solid rgba(59,130,246,0.15)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}>
+                  <Clock size={12} style={{ color: "var(--secondary-blue)", flexShrink: 0 }} />
+                  <p style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>
+                    Comparing with yesterday's intake data
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Goal Status */}
+            <div className="glass-panel dashboard-card" style={{ alignItems: "center", textAlign: "center" }}>
+              <h3 style={{ marginBottom: "20px", fontSize: "1rem", width: "100%" }}>Goal Status</h3>
+              {isMaintain ? (
+                <div className="fade-in">
+                  <div
+                    style={{
+                      width: "120px",
+                      height: "120px",
+                      borderRadius: "50%",
+                      margin: "0 auto 16px",
+                      border: `4px solid ${isOnTrack ? "var(--accent-neon)" : "var(--warning)"}`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "rgba(255,255,255,0.02)",
+                    }}
+                  >
+                    <Target size={40} style={{ color: isOnTrack ? "var(--accent-neon)" : "var(--warning)" }} />
+                  </div>
+                  <h4 style={{ color: isOnTrack ? "var(--accent-neon)" : "var(--warning)", fontSize: "1.25rem" }}>
+                    {isOnTrack ? "Stable" : "Fluctuating"}
+                  </h4>
+                  <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "8px" }}>
+                    Weekly change: {recentDiff > 0 ? `+${recentDiff.toFixed(1)}` : recentDiff.toFixed(1)}kg
+                  </p>
+                </div>
+              ) : (
+                <div style={{ position: "relative", width: "160px", height: "160px" }}>
+                  <svg width="160" height="160" viewBox="0 0 160 160">
+                    <circle cx="80" cy="80" r="70" fill="transparent" stroke="rgba(255,255,255,0.05)" strokeWidth="12" />
+                    <circle
+                      cx="80"
+                      cy="80"
+                      r="70"
+                      fill="transparent"
+                      stroke="var(--accent-neon)"
+                      strokeWidth="12"
+                      strokeDasharray={440}
+                      strokeDashoffset={440 - (440 * progressPercent) / 100}
+                      strokeLinecap="round"
+                      transform="rotate(-90 80 80)"
+                      style={{ transition: "stroke-dashoffset 1s ease-out" }}
+                    />
+                  </svg>
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "50%",
+                      left: "50%",
+                      transform: "translate(-50%, -50%)",
+                    }}
+                  >
+                    <p style={{ fontSize: "1.5rem", fontWeight: 700 }}>{progressPercent}%</p>
+                    <p style={{ fontSize: "0.65rem", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                      Achieved
+                    </p>
+                  </div>
+                </div>
+              )}
+              {!isMaintain && (
+                <p style={{ marginTop: "16px", fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                  Target: {targetWeight}kg
+                </p>
+              )}
             </div>
           </div>
         </div>
