@@ -679,8 +679,8 @@ const Dashboard = () => {
   }
 
   let targetWeight = latestWeight;
-  if (userProfile?.goal === "Weight Loss") targetWeight = startWeight - 5;
-  else if (userProfile?.goal === "Muscle Gain") targetWeight = startWeight + 5;
+  if (userProfile?.goal === "Weight Loss") targetWeight = startWeight - 8;
+  else if (userProfile?.goal === "Muscle Gain") targetWeight = startWeight + 8;
 
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
